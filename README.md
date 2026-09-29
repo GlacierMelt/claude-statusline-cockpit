@@ -24,7 +24,7 @@ cost, and your current path and git branch.
 ## Install
 
 ```sh
-git clone https://github.com/USER/claude-statusline-cockpit.git
+git clone https://github.com/GlacierMelt/claude-statusline-cockpit.git
 cd claude-statusline-cockpit
 bash install.sh
 ```
