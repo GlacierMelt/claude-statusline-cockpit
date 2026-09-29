@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cost Sheen</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#12161c; --muted:#5b6672; --line:#e3e7ec;
+    --panel:#f7f9fb; --code:#f0f3f7;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#14171c; --ink:#e8ecf1; --muted:#9aa4b1; --line:#2a3038;
+      --panel:#1b1f26; --code:#1b1f26;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14171c; --ink:#e8ecf1; --muted:#9aa4b1; --line:#2a3038;
+    --panel:#1b1f26; --code:#1b1f26;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.65 ui-sans-serif,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    padding:40px 16px 72px;
+  }
+  .wrap{max-width:880px;margin:0 auto}
+  h1{font-size:24px;font-weight:640;letter-spacing:-.015em;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 34px}
+  h2{font-size:13px;font-weight:640;text-transform:uppercase;letter-spacing:.09em;
+     color:var(--muted);margin:38px 0 4px}
+  p{margin:10px 0}
+  code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.9em;background:var(--code);padding:.12em .38em;border-radius:4px;
+  }
+  /* the specimen rows */
+  .spec{
+    background:var(--panel); border:1px solid var(--line); border-radius:11px;
+    padding:22px 24px; margin:12px 0 0; overflow-x:auto;
+  }
+  .row{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:34px; font-weight:400; letter-spacing:.005em;
+    white-space:nowrap; line-height:1.32;
+  }
+  .row.sm{font-size:15px}
+  .row + .row{margin-top:20px}
+  .tag{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:11px;color:var(--muted);letter-spacing:.03em;
+    display:block;margin:0 0 7px;
+  }
+  .dark{background:#1e252e;border-color:#2b3440}
+  .dark .tag{color:#8b98a8}
+  table{width:100%;border-collapse:collapse;margin:16px 0 0;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);
+        vertical-align:top}
+  th{font-weight:620;font-size:12.5px;color:var(--muted);text-transform:uppercase;
+     letter-spacing:.06em}
+  td.n{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:2.5px;
+      border:1px solid rgba(128,128,128,.4);vertical-align:-1px;margin-right:7px}
+  .note{border-left:3px solid var(--line);padding:2px 0 2px 16px;color:var(--muted);
+        margin:18px 0;font-size:14px}
+  .verdict{
+    background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:18px 22px;margin:26px 0 0;
+  }
+  .verdict strong{font-weight:640}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>成本数字的挑染</h1>
+  <p class="sub">三种模式：整串渐变、单字符强调、关闭。逐字符上色 —— 字形内部无法分色（终端的硬限制）。</p>
+
+  <h2>先看清一件事：字形内部不能分色</h2>
+  <div class="note" style="margin-top:6px">
+    终端屏幕是单元格网格，一格 = 一个字符 + 一个前景色。终端用这一个颜色去画整个字形，
+    没有任何机制能让同一个字形的一部分用另一个颜色。把 <code>@</code> 或 <code>$</code>
+    这类字形放大看，它永远只有一个色值。<br><br>
+    所以「挑染」只能发生在<strong>字符与字符之间</strong>，每个字符一个颜色。
+    在 7 个字符的长度上，这已经足以读作渐变。
+  </div>
+
+  <h2>三种模式 · 放大 3 倍</h2>
+  <div class="spec dark">
+    <span class="tag">gradient · 每个字符向 <code>#DFF1F1</code> 移动一步</span>
+    <div class="row"><span style="color:#e0e4eb">$</span><span style="color:#e0e7ec">3</span><span style="color:#e0e9ed">4</span><span style="color:#dfecef">.</span><span style="color:#dfeef0">5</span><span style="color:#dff1f1">8</span></div>
+
+    <span class="tag" style="margin-top:26px">spot · last &nbsp;—&nbsp; 只有末位变色，其余是原始色</span>
+    <div class="row"><span style="color:#e0e4eb">$34.5</span><span style="color:#dff1f1">8</span></div>
+
+    <span class="tag" style="margin-top:26px">spot · first &nbsp;—&nbsp; 只有 <code>$</code> 变色</span>
+    <div class="row"><span style="color:#dff1f1">$</span><span style="color:#e0e4eb">34.58</span></div>
+
+    <span class="tag" style="margin-top:26px">off · 原来的平面色</span>
+    <div class="row" style="color:#e0e4eb">$34.58</div>
+  </div>
+
+  <h2>实际尺寸 · 深色终端</h2>
+  <div class="spec dark">
+    <span class="tag">gradient</span>
+    <div class="row sm"><span style="color:#e0e4eb">$</span><span style="color:#e0e7ec">3</span><span style="color:#e0e9ed">4</span><span style="color:#dfecef">.</span><span style="color:#dfeef0">5</span><span style="color:#dff1f1">8</span></div>
+
+    <span class="tag" style="margin-top:20px">spot · last</span>
+    <div class="row sm"><span style="color:#e0e4eb">$34.5</span><span style="color:#dff1f1">8</span></div>
+
+    <span class="tag" style="margin-top:20px">spot · first</span>
+    <div class="row sm"><span style="color:#dff1f1">$</span><span style="color:#e0e4eb">34.58</span></div>
+
+    <span class="tag" style="margin-top:20px">off</span>
+    <div class="row sm" style="color:#e0e4eb">$34.58</div>
+  </div>
+
+  <h2>完整一行的样子</h2>
+  <div class="spec dark">
+    <span class="tag">gradient</span>
+    <div class="row sm" style="font-size:15px">
+      <span style="background:#2c303a;color:#fff;font-weight:700"> Opus 5.5 </span><span style="color:#233d4d"> | </span><span style="color:#fe7f2d">high</span><span style="color:#5d778c">&nbsp;&nbsp;tok</span> <span style="color:#8fb8da;font-weight:700">45k/200k</span> <span style="color:#8fb8da">(</span><span style="color:#8fb8da;font-weight:700">23%</span><span style="color:#8fb8da">)</span> <span style="color:#e0e4eb">■</span><span style="color:#4a5568">····················</span> <span style="color:#e0e4eb">$</span><span style="color:#e0e7ec">3</span><span style="color:#e0e9ed">4</span><span style="color:#dfecef">.</span><span style="color:#dfeef0">5</span><span style="color:#dff1f1">8</span>
+    </div>
+
+    <span class="tag" style="margin-top:18px">spot · last</span>
+    <div class="row sm" style="font-size:15px">
+      <span style="background:#2c303a;color:#fff;font-weight:700"> Opus 5.5 </span><span style="color:#233d4d"> | </span><span style="color:#fe7f2d">high</span><span style="color:#5d778c">&nbsp;&nbsp;tok</span> <span style="color:#8fb8da;font-weight:700">45k/200k</span> <span style="color:#8fb8da">(</span><span style="color:#8fb8da;font-weight:700">23%</span><span style="color:#8fb8da">)</span> <span style="color:#e0e4eb">■</span><span style="color:#4a5568">····················</span> <span style="color:#e0e4eb">$34.5</span><span style="color:#dff1f1">8</span>
+    </div>
+  </div>
+
+  <h2>同样长度，换不同终点色（放大 3 倍）</h2>
+  <div class="spec dark">
+    <span class="tag">A · #e0e4eb → #DFF1F1（ΔE 7.78 · 很淡）</span>
+    <div class="row"><span style="color:#e0e4eb">$</span><span style="color:#e0e7ec">3</span><span style="color:#e0e9ed">4</span><span style="color:#dfecef">.</span><span style="color:#dfeef0">5</span><span style="color:#dff1f1">8</span></div>
+
+    <span class="tag" style="margin-top:26px">B · #c3ccd8 → #DFF1F1（ΔE 18.6 · 一眼可见）</span>
+    <div class="row"><span style="color:#c3ccd8">$</span><span style="color:#c8d3dc">3</span><span style="color:#cddae0">4</span><span style="color:#d2e1e4">.</span><span style="color:#d8e9e9">5</span><span style="color:#dff1f1">8</span></div>
+
+    <span class="tag" style="margin-top:26px">C · spot · last，起点压暗（ΔE 18.6 · 一个字符跳出来）</span>
+    <div class="row"><span style="color:#c3ccd8">$34.5</span><span style="color:#dff1f1">8</span></div>
+  </div>
+
+  <table>
+    <tr><th>方案</th><th class="n">ΔE2000</th><th>观感</th></tr>
+    <tr><td><span class="sw" style="background:#DFF1F1"></span>A · gradient，原起点</td>
+        <td class="n">7.78</td><td>看得出，但要并排比较才确定</td></tr>
+    <tr><td><span class="sw" style="background:#c3ccd8"></span>B · gradient，起点压暗</td>
+        <td class="n">18.6</td><td>一眼看出渐变方向</td></tr>
+    <tr><td><span class="sw" style="background:#dff1f1"></span>spot · last</td>
+        <td class="n">7.78</td><td>末位单独偏薄荷，最克制也最像"挑染"</td></tr>
+  </table>
+
+  <div class="note">
+    <strong>为什么 7.78 这么淡：</strong>两个颜色都接近 94% 亮度。<code>#DFF1F1</code> 相对
+    <code>#e0e4eb</code> 只多了 G+13、B+6，红色反而 −1 —— 它不比原来亮，只是更偏薄荷。
+    在 6 个字符上平摊，每格只移动约 2 个色阶。
+  </div>
+
+  <div class="verdict">
+    <strong>已实现。</strong>脚本里 <code>SHEEN</code> 现在接受
+    <code>off</code> / <code>gradient</code> / <code>spot</code>，
+    <code>COST_SPOT</code> 接受 <code>first</code> / <code>last</code> / 数字位置。
+    当前默认是 <code>gradient</code>。想要"单个字符挑染"就改成
+    <code>SHEEN=spot</code>；想要更明显，把 <code>COST_R0/G0/B0</code> 调成
+    <code>195;204;216</code>（方案 B/C）。
+  </div>
+
+</div>
+</body>
+</html>

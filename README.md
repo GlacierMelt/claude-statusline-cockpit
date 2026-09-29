@@ -96,6 +96,41 @@ DIR_C=$'\033[38;2;187;213;218m'       # #bbd5da  path on line 2
 The `48;2;R;G;B` form is a truecolor background, `38;2;R;G;B` a truecolor
 foreground, and a leading `1;` makes it bold.
 
+### The cost sheen
+
+The cost figure is coloured one character at a time — `$34.58` starts at the
+reference grey and drifts toward a mint accent by the last digit. Three modes,
+set by `SHEEN`:
+
+| `SHEEN` | Effect |
+| - | - |
+| `gradient` | every character drifts one step from the base toward the accent (default) |
+| `spot` | all base except one character, chosen by `COST_SPOT` (`first`, `last`, or a 1-based index) |
+| `off` | one flat colour, `COST_C` |
+
+```sh
+SHEEN=gradient                        # off | gradient | spot
+COST_SPOT=last                        # accent char when SHEEN=spot: first|last|N
+COST_R0=224; COST_G0=228; COST_B0=235 # #e0e4eb  base
+COST_R1=223; COST_G1=241; COST_B1=241 # #DFF1F1  accent
+```
+
+**A gradient inside a single glyph is not possible.** A terminal cell holds one
+character and one foreground colour, and the terminal paints the whole shape
+with that colour — nothing can colour part of a `$`. The sheen is therefore
+quantised to one colour per character, which on a six-character number is what
+reads as a gradient at all.
+
+**`#DFF1F1` on `#e0e4eb` is subtle by design — ΔE2000 of 7.78.** Both sit near
+94% luminance, so the accent is not brighter, only cooler: G+13, B+6, R−1.
+Per character that is a move of about two levels. If you want the sheen to read
+at a glance, darken the base to `#c3ccd8` (`195;204;216`), which lifts the
+difference to ΔE 18.6 while keeping the accent you asked for.
+
+The 256-colour fallback leaves `SHEEN=off`: that ramp's nearest entries are flat
+greys a full 10 levels apart with no mint at all, so a gradient there would be
+pure noise.
+
 To change the bar characters, edit `FILLED_CHAR` and `EMPTY_CHAR`. To resize it,
 the width is computed around `bar_w=$(( avail * 55 / 100 ))` — the `55` and the
 following `* 2 / 3` together decide how much of the free space it takes.

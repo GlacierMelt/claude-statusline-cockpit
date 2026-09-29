@@ -87,6 +87,10 @@ if [ "$TC" = 1 ]; then
   BAR_FILL_C=$'\033[38;2;224;228;235m' # #e0e4eb light fill
   BAR_EMPTY_C=$'\033[38;2;74;85;104m'  # #4a5568 dim empty slots
   COST_C=$'\033[38;2;224;228;235m'
+  SHEEN=gradient                       # off | gradient | spot  (see below)
+  COST_SPOT=last                       # accent char when SHEEN=spot: first|last|N
+  COST_R0=224; COST_G0=228; COST_B0=235 # #e0e4eb — base colour
+  COST_R1=223; COST_G1=241; COST_B1=241 # #DFF1F1 — accent colour
   EFF_C=$'\033[38;2;254;127;45m'       # #fe7f2d amber — same on every level
   DIR_C=$'\033[38;2;187;213;218m'      # #bbd5da pale ice — second line path
   GIT_C=$'\033[38;2;90;158;214m'
@@ -102,6 +106,10 @@ else
   BAR_FILL_C=$'\033[38;5;252m'
   BAR_EMPTY_C=$'\033[38;5;240m'
   COST_C=$'\033[38;5;252m'
+  SHEEN=off                            # flat here: the 256 ramp has no mint step
+  COST_SPOT=last                       # (unused while SHEEN=off)
+  COST_R0=224; COST_G0=228; COST_B0=235
+  COST_R1=223; COST_G1=241; COST_B1=241
   EFF_C=$'\033[38;5;208m'              # nearest 256 to #fe7f2d
   DIR_C=$'\033[38;5;152m'              # nearest 256 to #bbd5da
   GIT_C=$'\033[38;5;74m'
@@ -146,6 +154,57 @@ size_s=$(humanise "$size")
 cost_s=""
 [ -n "$cost_raw" ] && cost_s=$(awk -v c="$cost_raw" 'BEGIN{printf "$%.2f", c}')
 
+# How many columns the cost occupies. Measured HERE, on the plain text, before
+# the sheen below wraps every glyph in its own escape sequence — reading it
+# afterwards would count ~18 bytes of SGR per character as if it were visible
+# width and throw the layout arithmetic off.
+cost_vis=${#cost_s}
+
+# --- cost colouring: across characters, never inside one -------------------
+# SHEEN=off       one flat colour (COST_C)
+# SHEEN=gradient  each character drifts one step from the base toward the accent
+# SHEEN=spot      all base except one character, chosen by COST_SPOT
+#
+# A terminal cell holds one character and one foreground colour, so a gradient
+# *inside* a glyph is not expressible — the terminal paints the whole shape with
+# the cell's single colour. Everything here is therefore quantised to one colour
+# per character, which is what the eye reads as a sheen at this length.
+if [ -n "$cost_s" ] && [ "$SHEEN" != "off" ]; then
+  cost_render=""; clen=${#cost_s}; ci=0
+  den=$(( clen - 1 ))
+  [ "$den" -lt 1 ] && den=1
+  while [ "$ci" -lt "$clen" ]; do
+    ch=${cost_s:$ci:1}
+    if [ "$SHEEN" = "spot" ]; then
+      # Which character wears the accent: first, last, or a 1-based index.
+      case "$COST_SPOT" in
+        first)      spot=$(( 0 )) ;;
+        last)       spot=$(( clen - 1 )) ;;
+        ''|*[!0-9]*) spot=-1 ;;
+        *)          spot=$(( COST_SPOT - 1 )) ;;
+      esac
+      if [ "$ci" -eq "$spot" ]; then
+        r=$COST_R1; g=$COST_G1; b=$COST_B1
+      else
+        r=$COST_R0; g=$COST_G0; b=$COST_B0
+      fi
+    else
+      # Round half away from zero, spelled out because bash truncates toward
+      # zero: a negative numerator (the channels that drift DOWN to the accent)
+      # would otherwise lose its rounding and stop one step short of the target.
+      dr=$(( (COST_R1 - COST_R0) * ci ))
+      dg=$(( (COST_G1 - COST_G0) * ci ))
+      db=$(( (COST_B1 - COST_B0) * ci ))
+      r=$(( COST_R0 + (dr >= 0 ? (dr + den / 2) / den : -((-dr + den / 2) / den)) ))
+      g=$(( COST_G0 + (dg >= 0 ? (dg + den / 2) / den : -((-dg + den / 2) / den)) ))
+      b=$(( COST_B0 + (db >= 0 ? (db + den / 2) / den : -((-db + den / 2) / den)) ))
+    fi
+    cost_render="${cost_render}"$'\033[38;2;'"${r};${g};${b}m${ch}"
+    ci=$(( ci + 1 ))
+  done
+  cost_s="${cost_render}${RESET}"
+fi
+
 # --- terminal width (tput cannot see it from a status line script) ---------
 # Claude Code sets COLUMNS to the current terminal width before running this.
 cols=${COLUMNS:-0}
@@ -179,8 +238,6 @@ if [ "$size" -gt 0 ] 2>/dev/null; then
   tok_len=$(( 2 + ${#plain_tok} ))
   have_tok=1
 fi
-
-cost_vis=${#cost_s}
 
 # Minimum widths for each rung of the ladder.
 min_full=$(( badge_len + eff_len + tok_len + 2 + 8 + 1 + cost_vis ))
@@ -241,8 +298,14 @@ fi
 
 # Cost sits one space after the bar — a fixed gap, not right-aligned to the
 # terminal edge, so it never floats away from the progress it belongs to.
+# With the sheen on, cost_s already carries its own per-character colour, so
+# prefixing COST_C as well would only be overridden glyph by glyph.
 if [ "$show_cost" = 1 ]; then
-  out1="${out1} ${COST_C}${cost_s}${RESET}"
+  if [ "$SHEEN" != "off" ]; then
+    out1="${out1} ${cost_s}"
+  else
+    out1="${out1} ${COST_C}${cost_s}${RESET}"
+  fi
 fi
 
 # ===========================================================================
