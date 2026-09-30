@@ -117,7 +117,7 @@ if [ "$TC" = 1 ]; then
   TRI_C=$'\033[38;2;118;171;174m'      # #76ABAE — the ▲ marker
   HIT_LABEL_C=$'\033[38;2;48;56;65m'   # #303841 — the word 'hit'
   HIT_NUM_C=$'\033[38;2;255;0;0m'      # #FF0000 — the percentage
-  CACHE_BLANK_C=$'\033[38;2;74;85;104m' # #4a5568 — an idle bucket's baseline mark
+  CACHE_BLANK_C=$'\033[38;2;245;201;181m' # #F5C9B5 — an idle bucket wears the lowest step
 
   # --- the eight-step amplitude ramp ---------------------------------------
   # Bucket edges are 80, 82.5, 84, ... 100 — 2.5 points per step, eight steps.
@@ -164,7 +164,7 @@ else
   TRI_C=$'\033[38;5;109m'              # nearest 256 to #76ABAE
   HIT_LABEL_C=$'\033[38;5;238m'        # nearest 256 to #303841
   HIT_NUM_C=$'\033[38;5;196m'          # nearest 256 to #FF0000
-  CACHE_BLANK_C=$'\033[38;5;240m'      # nearest 256 to #4a5568
+  CACHE_BLANK_C=$'\033[38;5;223m'      # nearest 256 to #F5C9B5 — the lowest step
   # The 256 cube cannot hold the mint end of the ramp, so these eight are chosen
   # by hand along the nearest faces: warm (223) -> grey-green (187) -> teal
   # (151/115) -> pale (152). Pairs repeat at the ends because the cube has no
