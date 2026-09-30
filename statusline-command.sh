@@ -1,6 +1,7 @@
 #!/bin/bash
-# Claude Code status line — "cockpit" layout, two lines
+# Claude Code status line — "cockpit" layout, three lines
 #   Opus 5.5  | high  tok 94.4k/200k (47%)  ■■■■■■■■■···   $0.42
+#   ▲ hit 94%  ▁▃▄▅▆▇█
 #   ~/AI/CODEX/LLM MODEL TEST/Opus_5-5 · main*
 #
 # Palette follows the reference design: white-on-slate badge, powder-blue token
@@ -38,9 +39,13 @@ if command -v jq >/dev/null 2>&1; then
       (.context_window.total_output_tokens // 0),
       (.context_window.context_window_size // 0),
       (.cost.total_cost_usd // ""),
-      (.workspace.current_dir // .cwd // "")
+      (.workspace.current_dir // .cwd // ""),
+      (.prompt_cache.hit_ratio // ""),
+      (.prompt_cache.requests // ""),
+      (.prompt_cache.misses // "")
     ] | @tsv' 2>/dev/null)
-  [ -n "$fields" ] && IFS=$'\t' read -r model effort in_tok out_tok size cost_raw dir <<< "$fields"
+  [ -n "$fields" ] && IFS=$'\t' read -r model effort in_tok out_tok size cost_raw dir \
+                                       hit_raw req_raw miss_raw <<< "$fields"
 fi
 
 if [ -z "$model$effort$in_tok$out_tok$size$cost_raw$dir" ]; then
@@ -65,6 +70,11 @@ if [ -z "$model$effort$in_tok$out_tok$size$cost_raw$dir" ]; then
   cost_raw=$(scalar cost.total_cost_usd)
   dir=$(scalar workspace.current_dir)
   [ -z "$dir" ] && dir=$(scalar cwd)
+  # prompt_cache is absent until caching has been observed, so all three are
+  # allowed to come back empty and the whole segment is skipped when they do.
+  hit_raw=$(scalar prompt_cache.hit_ratio)
+  req_raw=$(scalar prompt_cache.requests)
+  miss_raw=$(scalar prompt_cache.misses)
 fi
 
 # --- truecolor capability --------------------------------------------------
@@ -74,10 +84,19 @@ case "${COLORTERM:-}" in truecolor|24bit) TC=1 ;; esac
 [ "${TERM_PROGRAM:-}" = "WezTerm" ]   && TC=1
 case "${TERM:-}" in *-direct|*-truecolor) TC=1 ;; esac
 
+# One block per height step, U+2581 .. U+2588. Index is the step number, so the
+# colour array and this one are addressed by the same value. Kept as plain
+# variables rather than an array because they are handed to awk via -v below,
+# and a literal character is safer there than a \uXXXX escape: whether awk
+# decodes those depends on the build and the locale, while a character that
+# arrives as UTF-8 bytes goes through untouched.
+RAMP_CH0='▁'; RAMP_CH1='▂'; RAMP_CH2='▃'; RAMP_CH3='▄'
+RAMP_CH4='▅'; RAMP_CH5='▆'; RAMP_CH6='▇'; RAMP_CH7='█'
+
 if [ "$TC" = 1 ]; then
   BADGE_BG=$'\033[48;2;44;48;58m'      # #2c303a slate badge field
   BADGE_FG=$'\033[1;38;2;255;255;255m' # pure white, bold
-  SEP_C=$'\033[38;2;90;102;120m'       # #5a6678 dot / second-line separator
+  SEP_C=$'\033[38;2;90;102;120m'       # #5a6678 dot / third-line separator
   # Fixed colour rather than the terminal default (SGR 39): #233d4d was chosen
   # explicitly. Note this does NOT adapt — see the fallback branch.
   PIPE_C=$'\033[38;2;35;61;77m'        # #233d4d deep petrol
@@ -92,9 +111,37 @@ if [ "$TC" = 1 ]; then
   COST_R0=224; COST_G0=228; COST_B0=235 # #e0e4eb — base colour
   COST_R1=223; COST_G1=241; COST_B1=241 # #DFF1F1 — accent colour
   EFF_C=$'\033[38;2;254;127;45m'       # #fe7f2d amber — same on every level
-  DIR_C=$'\033[38;2;187;213;218m'      # #bbd5da pale ice — second line path
+  DIR_C=$'\033[38;2;187;213;218m'      # #bbd5da pale ice — third line path
   GIT_C=$'\033[38;2;90;158;214m'
   DIRTY_C=$'\033[1;38;2;224;228;235m'
+  TRI_C=$'\033[38;2;118;171;174m'      # #76ABAE — the ▲ marker
+  HIT_LABEL_C=$'\033[38;2;48;56;65m'   # #303841 — the word 'hit'
+  HIT_NUM_C=$'\033[38;2;255;0;0m'      # #FF0000 — the percentage
+  CACHE_BLANK_C=$'\033[38;2;74;85;104m' # #4a5568 — an idle bucket's baseline mark
+
+  # --- the eight-step amplitude ramp ---------------------------------------
+  # Bucket edges are 80, 82.5, 84, ... 100 — 2.5 points per step, eight steps.
+  # Anything at or below 80% clamps into step 0, so the bar cannot show how far
+  # below it went: that is what the printed percentage beside it is for.
+  #
+  # Colours are the agreed B ramp — the three supplied anchors (#FFC6B0 at 80%,
+  # #A5D7D5 at 90%, #DFF1F1 at 100%) interpolated in OKLab — sampled at each of
+  # the eight bucket midpoints:
+  #   81.25 #F5C9B5   86.25 #CAD2C8   91.25 #ACDAD8   96.25 #C9E7E6
+  #   83.75 #E1CDBE   88.75 #B2D5D1   93.75 #BBE1DF   98.75 #D8EEED
+  # Adjacent OKLab ΔE runs 2.5-3.2 except 86.25->88.75, which is 1.4. That is
+  # still above the ~1.0 just-noticeable threshold, but it is the weakest seam
+  # in the set, and it sits on the 87.5 boundary — right where "nearly fine"
+  # turns into "fine". If it ever needs widening, make the warm and cool halves
+  # separately monotonic in lightness instead of interpolating between anchors.
+  RAMP_C[0]=$'\033[38;2;245;201;181m'
+  RAMP_C[1]=$'\033[38;2;225;205;190m'
+  RAMP_C[2]=$'\033[38;2;202;210;200m'
+  RAMP_C[3]=$'\033[38;2;178;213;209m'
+  RAMP_C[4]=$'\033[38;2;172;218;216m'
+  RAMP_C[5]=$'\033[38;2;187;225;223m'
+  RAMP_C[6]=$'\033[38;2;201;231;230m'
+  RAMP_C[7]=$'\033[38;2;216;238;237m'
 else
   BADGE_BG=$'\033[48;5;236m'
   BADGE_FG=$'\033[1;38;5;231m'
@@ -114,6 +161,22 @@ else
   DIR_C=$'\033[38;5;152m'              # nearest 256 to #bbd5da
   GIT_C=$'\033[38;5;74m'
   DIRTY_C=$'\033[1;38;5;252m'
+  TRI_C=$'\033[38;5;109m'              # nearest 256 to #76ABAE
+  HIT_LABEL_C=$'\033[38;5;238m'        # nearest 256 to #303841
+  HIT_NUM_C=$'\033[38;5;196m'          # nearest 256 to #FF0000
+  CACHE_BLANK_C=$'\033[38;5;240m'      # nearest 256 to #4a5568
+  # The 256 cube cannot hold the mint end of the ramp, so these eight are chosen
+  # by hand along the nearest faces: warm (223) -> grey-green (187) -> teal
+  # (151/115) -> pale (152). Pairs repeat at the ends because the cube has no
+  # closer entry, which is a real limitation of this branch, not an oversight.
+  RAMP_C[0]=$'\033[38;5;223m'
+  RAMP_C[1]=$'\033[38;5;223m'
+  RAMP_C[2]=$'\033[38;5;187m'
+  RAMP_C[3]=$'\033[38;5;151m'
+  RAMP_C[4]=$'\033[38;5;115m'
+  RAMP_C[5]=$'\033[38;5;115m'
+  RAMP_C[6]=$'\033[38;5;152m'
+  RAMP_C[7]=$'\033[38;5;152m'
 fi
 
 FILLED_CHAR='■'
@@ -309,7 +372,7 @@ if [ "$show_cost" = 1 ]; then
 fi
 
 # ===========================================================================
-# Line 2 — where you are
+# Line 3 — where you are
 # ===========================================================================
 case "$dir" in
   "$HOME")   short="~" ;;
@@ -347,13 +410,165 @@ if [ -n "$dir" ] && [ -d "$dir" ]; then
   esac
 fi
 
-out2=""
-[ -n "$short" ] && out2="${DIR_C}${short}${RESET}"
+out3=""
+[ -n "$short" ] && out3="${DIR_C}${short}${RESET}"
 if [ -n "$branch" ]; then
-  [ -n "$out2" ] && out2="${out2}${SEP_C} · ${RESET}"
-  out2="${out2}${GIT_C}${branch}${RESET}${DIRTY_C}${dirty}${RESET}"
+  [ -n "$out3" ] && out3="${out3}${SEP_C} · ${RESET}"
+  out3="${out3}${GIT_C}${branch}${RESET}${DIRTY_C}${dirty}${RESET}"
+fi
+
+# ===========================================================================
+# Line 2 — cache hit history
+# ===========================================================================
+# The payload carries no history: prompt_cache is a cumulative snapshot, so a
+# per-bucket rate has to be reconstructed by sampling it and differencing
+# consecutive samples. Two running totals are needed, not one — a bucket's rate
+# is (Δrequests − Δmisses) / Δrequests, and `misses` alone supplies only the
+# numerator.
+#
+# The log therefore holds three fields: epoch seconds, cumulative requests,
+# cumulative misses. Two-field records written by the earlier version of this
+# script may still be on disk, so the reader demands exactly three numeric
+# fields and drops anything else rather than mis-parsing a two-field line as a
+# result.
+CACHE_BUCKETS=12        # fixed bar length
+CACHE_BUCKET_S=300      # seconds per bucket -> 12 x 5m = 60m
+CACHE_KEEP=600          # lines retained before trimming
+CACHE_LOG="${TMPDIR:-/tmp}/claude-statusline-cache-${UID:-0}.log"
+
+cache_seg=""
+if [ -n "$miss_raw" ] && [ -n "$req_raw" ]; then
+  # The sample is appended here rather than from inside awk. Two redraws can
+  # run at once, and a shell `printf >> file` is a single atomic write while
+  # awk's buffered output is not: interleaved writes tear a record in half and
+  # the mangled line then reads as a counter thousands of times too large.
+  now=$(date +%s)
+  # Seed the log with one record dated at the start of the window it is about
+  # to cover. Without it the oldest sample in the file has no predecessor, its
+  # delta cannot be formed, and the first bucket renders empty forever — the
+  # window's leading edge would read as "nothing sent" even under full load.
+  # The sentinel carries the same counters as the first real sample, so the
+  # delta it enables is exactly zero and it cannot invent traffic.
+  if [ ! -s "$CACHE_LOG" ]; then
+    printf '%s\t%s\t%s\n' "$(( now - CACHE_BUCKETS * CACHE_BUCKET_S ))" \
+           "$req_raw" "$miss_raw" >> "$CACHE_LOG" 2>/dev/null
+  fi
+  printf '%s\t%s\t%s\n' "$now" "$req_raw" "$miss_raw" >> "$CACHE_LOG" 2>/dev/null
+
+  cache_seg=$(awk -v now="$now" -v logf="$CACHE_LOG" \
+      -v nb="$CACHE_BUCKETS" -v bs="$CACHE_BUCKET_S" -v keep="$CACHE_KEEP" \
+      -v rst="$RESET" -v blankc="$CACHE_BLANK_C" \
+      -v c0="${RAMP_C[0]}" -v c1="${RAMP_C[1]}" -v c2="${RAMP_C[2]}" -v c3="${RAMP_C[3]}" \
+      -v c4="${RAMP_C[4]}" -v c5="${RAMP_C[5]}" -v c6="${RAMP_C[6]}" -v c7="${RAMP_C[7]}" \
+      -v b1="$RAMP_CH0" -v b2="$RAMP_CH1" -v b3="$RAMP_CH2" -v b4="$RAMP_CH3" \
+      -v b5="$RAMP_CH4" -v b6="$RAMP_CH5" -v b7="$RAMP_CH6" -v b8="$RAMP_CH7" '
+    BEGIN{
+      FS = "\t"
+      ramp[0]=c0; ramp[1]=c1; ramp[2]=c2; ramp[3]=c3
+      ramp[4]=c4; ramp[5]=c5; ramp[6]=c6; ramp[7]=c7
+      chr[0]=b1; chr[1]=b2; chr[2]=b3; chr[3]=b4
+      chr[4]=b5; chr[5]=b6; chr[6]=b7; chr[7]=b8
+
+      # --- read history ---------------------------------------------------
+      n = 0; prev = ""
+      while ((getline line < logf) > 0) {
+        # Exactly three numeric fields, strictly increasing in time, counters
+        # non-decreasing. Anything else is dropped: a torn line, a two-field
+        # record from the previous version of this script, or a stale file from
+        # before either format. Without the field check a merged line parses as
+        # a bogus counter and poisons every delta that follows it.
+        if (split(line, f, "\t") != 3) continue
+        if (f[1] !~ /^[0-9]+$/ || f[2] !~ /^[0-9]+$/ || f[3] !~ /^[0-9]+$/) continue
+        if (f[1] <= prev) continue
+        prev = f[1]
+        if (n > 0 && (f[2] < q[n-1] || f[3] < m[n-1])) continue   # counter went backwards
+        t[n] = f[1]; q[n] = f[2]; m[n] = f[3]; n++
+      }
+      close(logf)
+      if (n == 0) { print ""; exit }
+
+      # --- trim to the newest `keep` samples ------------------------------
+      # One record older than the kept range is retained on purpose. Deltas are
+      # formed between consecutive samples, so the oldest kept sample needs a
+      # predecessor to be worth anything: without it the leading edge of the
+      # window has no delta and renders as "nothing sent" even under load. The
+      # extra line is that predecessor.
+      if (n > keep + 1) {
+        tmp = logf ".tmp"
+        for (i = n - keep - 1; i < n; i++) printf "%d\t%d\t%d\n", t[i], q[i], m[i] > tmp
+        close(tmp)
+        system("mv -f \"" tmp "\" \"" logf "\"")
+      }
+
+      # --- bucket the interval covered by the bar -------------------------
+      # Each bucket keeps its own deltas, so its rate comes from the change
+      # across it rather than from a global ratio — which is the whole point of
+      # a history bar: one bad minute should show as one short column, not
+      # vanish into a healthy running average.
+      #
+      # A bucket with no requests at all is left unset and renders as a bare
+      # baseline mark, not as a zero rate: nothing was sent, which is not the
+      # same as everything missing, and drawing it as a miss would invent an
+      # outage every time the session sat idle.
+      #
+      # `now` is the current redraw, not the newest sample: after a quiet
+      # stretch the newest sample is old, and anchoring the window to it would
+      # slide the whole bar left and misplace every cell.
+      start = now - nb * bs
+      for (i = 0; i < nb; i++) { dq[i] = 0; dm[i] = 0; have[i] = 0 }
+      for (i = 1; i < n; i++) {
+        if (t[i] < start) continue
+        # i-1 belongs to the previous sample, which may fall before `start`;
+        # that is fine, the delta is still the right one.
+        b = int((t[i] - start) / bs)
+        if (b < 0 || b >= nb) continue
+        dq[b] += q[i] - q[i-1]
+        dm[b] += m[i] - m[i-1]
+        have[b] = 1
+      }
+
+      # --- render ---------------------------------------------------------
+      # Eight steps spanning 80-100%, 2.5 points each. A rate at or below 80
+      # clamps into step 0, so the bar stops distinguishing "just under" from
+      # "far under" — the printed percentage beside it carries that.
+      # Steps are emitted one colour run at a time: one escape per run rather
+      # than one per cell, which is both cheaper and easier on the eye.
+      out = ""; run = ""; run_c = ""
+      for (i = 0; i < nb; i++) {
+        if (!have[i] || dq[i] <= 0) {
+          c = blankc; ch = chr[0]
+        } else {
+          r = (dq[i] - dm[i]) / dq[i] * 100
+          s = int((r - 80) / 2.5)
+          if (s < 0) s = 0; if (s > 7) s = 7
+          c = ramp[s]; ch = chr[s]
+        }
+        if (c != run_c && run != "") { out = out run_c run rst; run = "" }
+        run_c = c; run = run ch
+      }
+      if (run != "") out = out run_c run rst
+      print out
+    }
+  ' 2>/dev/null)
+fi
+
+out2=""
+if [ -n "$hit_raw" ]; then
+  # hit_ratio is 0..1. Done in shell rather than awk: one fewer process, and
+  # the fields are already strings here.
+  hit_hi=${hit_raw%%.*}
+  hit_lo=${hit_raw#*.}
+  hit_lo=${hit_lo}000
+  hit_lo=${hit_lo:0:3}
+  # Guard the base-10 conversion: a malformed payload must not abort the script.
+  case "$hit_hi$hit_lo" in *[!0-9]*|'') hit_pct=0 ;; *)
+    hit_pct=$(( hit_hi * 100 + (10#$hit_lo + 5) / 10 )) ;;
+  esac
+  out2="  ${TRI_C}▲${RESET} ${HIT_LABEL_C}hit${RESET} ${HIT_NUM_C}${hit_pct}%${RESET}"
+  [ -n "$cache_seg" ] && out2="${out2}  ${cache_seg}"
 fi
 
 printf '%s\n' "$out1"
 [ -n "$out2" ] && printf '%s\n' "$out2"
+[ -n "$out3" ] && printf '%s\n' "$out3"
 exit 0
