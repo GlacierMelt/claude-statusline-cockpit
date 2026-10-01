@@ -140,7 +140,7 @@ if [ "$TC" = 1 ]; then
   # quiet marker, not a signal.
   TRI_C=$'\033[38;2;118;171;174m'      # #76abae muted teal — the ▲ glyph
   HIT_LABEL_C=$'\033[38;2;48;56;65m'   # #303841 near-black slate — 'hit'
-  HIT_NUM_C=$'\033[38;2;255;0;0m'      # #FF0000 pure red — the percentage
+  HIT_NUM_C=$'\033[1;38;2;255;0;0m'    # #FF0000 pure red, bold — the percentage
 else
   BADGE_BG=$'\033[48;5;236m'
   BADGE_FG=$'\033[1;38;5;231m'
@@ -490,9 +490,30 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
         }
         out = out col[step] ch[step] rst
       }
+
+      # --- compute last-hour hit rate from all buckets --------------------
+      total_req = 0; total_miss = 0
+      for (i = 0; i < nb; i++) {
+        if (have[i] && dq[i] > 0) {
+          total_req += dq[i]
+          total_miss += dm[i]
+        }
+      }
+      hour_pct = 0
+      if (total_req > 0) {
+        hour_pct = (total_req - total_miss) * 100.0 / total_req
+        if (hour_pct < 0) hour_pct = 0
+        if (hour_pct > 100) hour_pct = 100
+      }
+
       print out
+      print int(hour_pct + 0.5)  # second line: rounded percentage
     }' 2>/dev/null)
 fi
+
+# awk outputs two lines: bar, then percentage
+cache_bar=$(echo "$cache_seg" | sed -n '1p')
+cache_pct=$(echo "$cache_seg" | sed -n '2p')
 
 # ===========================================================================
 # Line 2 — where you are
@@ -534,20 +555,10 @@ if [ -n "$dir" ] && [ -d "$dir" ]; then
 fi
 
 out2=""
-if [ -n "$hit_raw" ]; then
-  # hit_ratio is 0..1. Done in shell rather than awk: one fewer process, and
-  # the fields are already strings here.
-  hit_hi=${hit_raw%%.*}
-  hit_lo=${hit_raw#*.}
-  hit_lo=${hit_lo}000
-  hit_lo=${hit_lo:0:3}
-  # Guard the base-10 conversion: a malformed payload must not abort the script.
-  case "$hit_hi$hit_lo" in *[!0-9]*|'') hit_pct=0 ;; *)
-    hit_pct=$(( hit_hi * 100 + (10#$hit_lo + 5) / 10 )) ;;
-  esac
-  pfx="  ${TRI_C}▲${RESET} ${HIT_LABEL_C}hit${RESET} ${HIT_NUM_C}${hit_pct}%${RESET}"
-  [ -n "$cache_seg" ] && out2="${pfx}  ${cache_seg}"
-  [ -z "$cache_seg" ] && out2="$pfx"
+if [ -n "$cache_bar" ]; then
+  # cache_pct is the last-hour hit rate (0-100) computed by awk from all buckets
+  pfx="  ${TRI_C}▲${RESET} ${HIT_LABEL_C}hit${RESET} ${HIT_NUM_C}${cache_pct}%${RESET}"
+  out2="${pfx}  ${cache_bar}"
 fi
 
 out3=""
