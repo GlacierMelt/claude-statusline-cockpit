@@ -1,11 +1,12 @@
 # Cockpit status line for Claude Code
 
-A two-line status line for [Claude Code](https://code.claude.com/docs/en/statusline)
+A three-line status line for [Claude Code](https://code.claude.com/docs/en/statusline)
 with a model badge, reasoning effort, a context-window progress bar, session
-cost, and your current path and git branch.
+cost, **prompt cache hit rate visualization**, and your current path and git branch.
 
 ```
  Opus 5.5  | medium  tok 290k/1M (29%) ■■■■■■■················ $9.54
+ ▲ hit 94%  ▃▁▅▅▁█████▁▆
  ~/code/my-project · main*
 ```
 
@@ -15,7 +16,12 @@ cost, and your current path and git branch.
   from the word rather than from a colour you have to memorise.
 - **Token counter** with powder-blue numbers and unbolded parentheses, plus a
   progress bar and the running session cost.
-- **Path and git branch** on the second line, with a `*` when the tree is dirty.
+- **Cache hit rate bar** on the second line — 12 buckets covering the last 60
+  minutes, with 8-level color gradation (80-100%) showing cache performance.
+  Each bucket is 5 minutes, aligned to wall-clock boundaries (06:00, 06:05, etc.).
+  **Multi-session aware**: correctly merges data from multiple Claude Code sessions
+  sharing the same cache log, filtering negative deltas to prevent >100% rates.
+- **Path and git branch** on the third line, with a `*` when the tree is dirty.
 - **Degrades instead of wrapping.** The bar and then the cost drop away as the
   terminal narrows; below ~40 columns you are left with just the model badge.
 - **Truecolor with a 256-colour fallback** for terminals that don't advertise
@@ -82,6 +88,36 @@ key by hand.
 
 ## Customising
 
+### Cache hit rate visualization
+
+The cache bar shows prompt cache performance over the last 60 minutes:
+
+- **12 buckets** × 5 minutes each = 60-minute rolling window
+- **8-level color gradation** from 80% to 100% hit rate:
+  - `▁` 80-82.5% (warmest, indicates lower cache efficiency)
+  - `▂` 82.5-85%
+  - `▃` 85-87.5%
+  - `▄` 87.5-90%
+  - `▅` 90-92.5%
+  - `▆` 92.5-95%
+  - `▇` 95-97.5%
+  - `█` 97.5-100% (coolest, indicates optimal cache performance)
+- **Fixed-boundary alignment**: Buckets align to wall-clock boundaries (e.g., 06:00, 06:05, 06:10)
+  so the rightmost bucket updates in real-time as the current 5-minute window accumulates data
+- **Multi-session support**: When multiple Claude Code sessions run concurrently or sequentially,
+  the bar correctly merges all cache data by detecting session boundaries (counter resets) and
+  filtering negative deltas to prevent impossible >100% hit rates
+
+The cache colors use a carefully tuned 8-step gradient from warm (#F5C9B5) to cool (#D8EEED)
+tones, making performance trends readable at a glance. Each color is defined in the
+`CACHE_COLORS` array near the top of the script.
+
+**Interactive demos** showing the cache bar behavior with real data are available in `demos/`:
+- `cache-bar-live-demo.html` — Real-time simulation with speed controls
+- `cache-bar-multi-segment-fix.html` — Multi-session bug fix documentation
+
+### Color customization
+
 Every colour is a named variable near the top of the script, in two branches —
 one for truecolor, one for the 256-colour fallback. Edit the one that matches
 your terminal.
@@ -138,6 +174,9 @@ following `* 2 / 3` together decide how much of the free space it takes.
 ### Layout
 
 Line 1 is assembled from the widest arrangement down, so nothing ever overflows.
+Line 2 shows the cache hit rate bar (always present when cache data exists).
+Line 3 shows the current path and git branch.
+
 Measured with the example above:
 
 | Terminal width | What is shown |
@@ -151,6 +190,9 @@ Measured with the example above:
 
 The exact cut-offs shift with the length of the model name and the cost, since
 those are what the widths are computed from.
+
+The cache bar (line 2) adapts to terminal width but is typically shown at full
+width (12 buckets) unless the terminal is very narrow.
 
 ## Notes
 

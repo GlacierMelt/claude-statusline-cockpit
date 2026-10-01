@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cache Bar 多 Session 修复演示</title>
+<style>
+:root{
+--bg:#0A0D12;--panel:#0F131C;--line:#1E2636;--ink:#E8EBEF;--dim:#6B7686;
+--code:#05070C;--border:#161D2B;--accent:#7DD3E8;--warn:#FE7F2D;--ok:#6EE7B7;
+--mono:"SF Mono",Menlo,Monaco,"Cascadia Code",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.7 -apple-system,sans-serif;padding:40px 20px}
+.wrap{max-width:1200px;margin:0 auto}
+h1{font-size:28px;margin:0 0 8px;font-weight:600;color:#fff}
+.lead{color:var(--dim);margin:0 0 32px;font-size:15px;line-height:1.8}
+.lead b{color:#9BA3B0;font-weight:500}
+.section{margin-bottom:40px}
+.section h2{font-size:18px;margin:0 0 16px;font-weight:500;color:#B8C1D0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:18px}
+.card h3{font-size:14px;margin:0 0 12px;font-weight:500;color:#8A94A4;display:flex;align-items:center;gap:8px}
+.badge{font:11px/1 var(--mono);background:var(--code);border:1px solid var(--border);
+border-radius:4px;padding:4px 8px;color:var(--dim)}
+.badge.bug{color:var(--warn);border-color:#3D2A1F}
+.badge.fixed{color:var(--ok);border-color:#1F3D2E}
+.term{font:16px/2.1 var(--mono);background:var(--code);border:1px solid var(--border);
+border-radius:8px;padding:14px 18px;white-space:pre;letter-spacing:.01em;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:18px}
+.log-preview{font:13px/1.6 var(--mono);background:var(--code);border:1px solid var(--border);
+border-radius:6px;padding:12px;color:var(--dim);max-height:180px;overflow-y:auto}
+.log-preview .jump{color:var(--warn)}
+.log-preview .normal{color:#7A8A9E}
+.explain{font:14px/1.75 var(--mono);color:#8A94A4;margin-top:12px;padding:12px 16px;
+background:#0A0D12;border-left:3px solid var(--accent);border-radius:4px}
+.explain b{color:var(--accent)}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.compare .col h4{font:13px/1 var(--mono);margin:0 0 10px;color:#9BA3B0;font-weight:500}
+code{font:13px var(--mono);background:#0F1A26;color:var(--accent);padding:2px 6px;border-radius:3px}
+.highlight{color:var(--ok)}
+.dim{color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Cache Bar 多 Session 修复演示</h1>
+<p class="lead">
+  Claude Code 的 statusline 显示缓存命中率柱状图。当<b>多个 session 共享同一个 log 文件</b>时，
+  累积计数器会出现"倒退"（175→169→176），导致<b>命中率显示为 0% 或 >100%</b>。
+  本修复实现了多 segment 支持，正确合并所有 session 的数据。
+</p>
+
+<div class="section">
+  <h2>问题复现</h2>
+
+  <div class="card">
+    <h3><span class="badge bug">BUG</span> 原始实现：单 Segment 假设</h3>
+    <div class="log-preview"><span class="normal">1790853396  183  1</span>
+<span class="normal">1790853400  184  1</span>
+<span class="normal">1790853413  185  1</span>
+<span class="jump">1790854071    1  0  ← 跳回 1（新 session 开始）</span>
+<span class="jump">1790854121  223  1  ← 跳到 223（另一个 session）</span>
+<span class="jump">1790854171  680 41  ← 跳到 680（当前 session）</span>
+<span class="normal">1790854182  224  1</span></div>
+    <div class="explain">
+      原代码使用 <b>monotonic filter</b>：一旦检测到倒退，<b>丢弃所有旧数据</b>。
+      结果：只保留最后 2-3 分钟的数据 → 显示 <code>hit 100%</code>（样本不足）或 <code>hit 0%</code>（负 delta）。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="badge bug">BUG</span> 负 Delta 导致 >100% 命中率</h3>
+    <div class="term">bucket 4: dq=100 dm=-20 hit=<span class="highlight">120.0%</span>
+bucket 7: dq=100 dm=-70 hit=<span class="highlight">170.0%</span>
+bucket 9: dq=-956 dm=-21
+
+Final: total_miss=-18, hour_pct=<span class="highlight">101.9%</span></div>
+    <div class="explain">
+      原代码累加逻辑：<code>if (have[i] && dq[i] > 0)</code> 允许 <b>负的 dm[i]</b> 累加。
+      当 session 切换时，<code>dm = m[i] - m[i-1]</code> 可能为负 → total_miss 为负 → 命中率超过 100%。
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>修复方案</h2>
+
+  <div class="card">
+    <h3><span class="badge fixed">FIXED</span> 多 Segment 识别与合并</h3>
+
+    <div class="compare">
+      <div class="col">
+        <h4>❌ 旧逻辑</h4>
+        <div class="term" style="font-size:14px;line-height:1.8"><span class="dim"># 检测倒退 → 丢弃所有旧数据</span>
+if (f[2] < last_q || f[3] < last_m) {
+  n = 0  <span class="dim"># 重置样本数</span>
+  continue
+}</div>
+      </div>
+      <div class="col">
+        <h4>✅ 新逻辑</h4>
+        <div class="term" style="font-size:14px;line-height:1.8"><span class="dim"># 检测倒退 → 保存当前 segment</span>
+if (f[2] < last_q || f[3] < last_m) {
+  seg_id++       <span class="dim"># 开始新 segment</span>
+  num_segments++
+}</div>
+      </div>
+    </div>
+
+    <div class="explain">
+      使用<b>二维数组</b>存储多个 segment：<code>t[seg_id, i]</code>、<code>q[seg_id, i]</code>、<code>m[seg_id, i]</code>。
+      遍历所有 segment 计算 delta 并累加到对应 bucket。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="badge fixed">FIXED</span> 过滤负 Delta</h3>
+
+    <div class="compare">
+      <div class="col">
+        <h4>❌ 旧逻辑</h4>
+        <div class="term" style="font-size:14px;line-height:1.8">if (have[i] && dq[i] > 0) {
+  total_req += dq[i]
+  total_miss += dm[i]  <span class="dim"># 可能为负！</span>
+}</div>
+      </div>
+      <div class="col">
+        <h4>✅ 新逻辑</h4>
+        <div class="term" style="font-size:14px;line-height:1.8">if (have[i] && dq[i] > 0
+    <span class="highlight">&& dm[i] >= 0</span>) {
+  total_req += dq[i]
+  total_miss += dm[i]
+}</div>
+      </div>
+    </div>
+
+    <div class="explain">
+      添加 <code>dm[i] >= 0</code> 检查，过滤掉 session 切换时产生的负 delta。
+      防止 total_miss 为负，确保命中率在 0-100% 范围内。
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>修复效果</h2>
+
+  <div class="grid">
+    <div class="card">
+      <h3>修复前：只有 2 个 bucket</h3>
+      <div class="term"><span style="color:#76ABAE">▲ </span><span style="color:#303841">hit </span><span style="color:#FF0000">100%  </span><span style="color:#F5C9B5">▁▁▁▁▁▁▁▁▁▁</span><span style="color:#D8EEED">██</span></div>
+      <div class="explain">
+        数据不足：monotonic filter 丢弃了 58 分钟的历史数据，
+        只保留最近 2 分钟 → 样本太少 → 显示 100%
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>修复后：覆盖 8 个 bucket</h3>
+      <div class="term"><span style="color:#76ABAE">▲ </span><span style="color:#303841">hit </span><span style="color:#FF0000">94%  </span><span style="color:#CAD2C8">▃</span><span style="color:#F5C9B5">▁</span><span style="color:#ACDAD8">▅▅</span><span style="color:#F5C9B5">▁</span><span style="color:#D8EEED">█████</span><span style="color:#F5C9B5">▁</span><span style="color:#BBE1DF">▆</span></div>
+      <div class="explain">
+        <b>7 个 segment 成功合并</b>：1167 requests, 65 misses, hit rate = <span class="highlight">94.4%</span>
+        <br>覆盖 40 分钟历史数据，显示真实的命中率波动
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Segment 识别详情</h3>
+    <div class="term" style="font-size:14px">Segment 0: 7 samples (q: 0 -> 600)
+Segment 1: 3 samples (q: 700 -> 900)
+Segment 2: 4 samples (q: 1000 -> 1200)
+Segment 3: 47 samples (q: 143 -> 175)
+Segment 4: 30 samples (q: 169 -> 223)
+Segment 5: 3 samples (q: 1 -> 680)  <span class="dim">← 新 session 大跳跃</span>
+Segment 6: 4 samples (q: 224 -> 225)
+
+Total segments: <span class="highlight">7</span></div>
+  </div>
+
+  <div class="card">
+    <h3>Bucket 明细</h3>
+    <div class="term" style="font-size:14px">bucket  1: dq=100 dm=10 hit=90%
+bucket  2: dq=100 dm=10 hit=90%
+bucket  4: dq=100 dm=2 hit=98%
+bucket  5: dq=101 dm=2 hit=98%
+bucket  6: dq=12 dm=0 hit=100%  <span class="dim">← 连续完美命中</span>
+bucket  7: dq=30 dm=0 hit=100%
+bucket  8: dq=9 dm=0 hit=100%
+bucket 10: dq=715 dm=41 hit=94%  <span class="dim">← 当前 bucket</span>
+
+Total: <span class="highlight">1167 requests, 65 misses, 94.4%</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Claude Code 更新兼容性</h2>
+
+  <div class="card">
+    <h3><span class="badge fixed">SAFE</span> 历史数据不会丢失</h3>
+    <div class="explain">
+      <b>优势</b>：所有 session 共享同一个 log 文件<br>
+      • 旧 session 的数据仍然保留并被新 session 读取<br>
+      • 60 分钟窗口内的所有数据都会被使用<br>
+      • Claude Code 重启后立即显示完整的历史命中率
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
