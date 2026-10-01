@@ -139,7 +139,7 @@ if [ "$TC" = 1 ]; then
   # they are the two highest-contrast colours on the line; the arrow is a
   # quiet marker, not a signal.
   TRI_C=$'\033[38;2;118;171;174m'      # #76abae muted teal — the ▲ glyph
-  HIT_LABEL_C=$'\033[38;2;48;56;65m'   # #303841 near-black slate — 'hit'
+  HIT_LABEL_C=$'\033[38;2;155;163;176m' # #9BA3B0 medium gray — 'hit'
   HIT_NUM_C=$'\033[1;38;2;255;0;0m'    # #FF0000 pure red, bold — the percentage
 else
   BADGE_BG=$'\033[48;5;236m'
@@ -176,7 +176,7 @@ else
   CACHE_BLANK_C=$'\033[38;5;223m'      # nearest 256 to #F5C9B5
 
   TRI_C=$'\033[38;5;109m'              # nearest 256 to #76abae
-  HIT_LABEL_C=$'\033[38;5;236m'        # nearest 256 to #303841
+  HIT_LABEL_C=$'\033[38;5;248m'        # nearest 256 to #9BA3B0
   HIT_NUM_C=$'\033[38;5;196m'          # nearest 256 to #FF0000
 fi
 
