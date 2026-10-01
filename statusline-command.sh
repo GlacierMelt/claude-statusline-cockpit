@@ -138,7 +138,7 @@ if [ "$TC" = 1 ]; then
   # The "▲ hit 96%" prefix. The label and the number carry the meaning, so
   # they are the two highest-contrast colours on the line; the arrow is a
   # quiet marker, not a signal.
-  TRI_C=$'\033[38;2;118;171;174m'      # #76abae muted teal — the ▲ glyph
+  TRI_C=$'\033[38;2;84;119;146m'       # #547792 slate blue — the ▲ glyph
   HIT_LABEL_C=$'\033[38;2;155;163;176m' # #9BA3B0 medium gray — 'hit'
   HIT_NUM_C=$'\033[1;38;2;255;0;0m'    # #FF0000 pure red, bold — the percentage
 else
@@ -175,7 +175,7 @@ else
   RAMP_C[7]=$'\033[38;5;152m'
   CACHE_BLANK_C=$'\033[38;5;223m'      # nearest 256 to #F5C9B5
 
-  TRI_C=$'\033[38;5;109m'              # nearest 256 to #76abae
+  TRI_C=$'\033[38;5;66m'               # nearest 256 to #547792
   HIT_LABEL_C=$'\033[38;5;248m'        # nearest 256 to #9BA3B0
   HIT_NUM_C=$'\033[38;5;196m'          # nearest 256 to #FF0000
 fi
