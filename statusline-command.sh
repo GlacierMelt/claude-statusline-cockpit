@@ -417,7 +417,14 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
         t[n] = f[1]; q[n] = f[2]; m[n] = f[3]; n++
       }
       close(logf)
-      if (n == 0) { print ""; exit }
+      # Even with no history, render 12 blank cells so the bar shape is visible.
+      if (n == 0) {
+        ch[0]=ch0
+        out = ""
+        for (i = 0; i < nb; i++) out = out blankc ch[0] rst
+        print out
+        exit
+      }
 
       # --- trim to the newest `keep` samples ------------------------------
       if (n > keep) {
@@ -467,9 +474,7 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
         out = out col[step] ch[step] rst
       }
       print out
-    }
-    }
-  ' 2>/dev/null)
+    }' 2>/dev/null)
 fi
 
 # ===========================================================================
