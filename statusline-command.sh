@@ -435,16 +435,28 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
       }
 
       # --- bucket the interval: accumulate Δreq and Δmiss per bucket ------
-      start = now - nb * bs
+      # Buckets align to fixed 5-minute clock boundaries (e.g. 06:00, 06:05).
+      # The rightmost bucket covers the current incomplete period and only grows
+      # (no sliding). Every 5 minutes the bar shifts left discretely.
+      bucket_end = int((now + bs - 1) / bs) * bs  # round up to next boundary
+      start = bucket_end - nb * bs
       for (i = 0; i < nb; i++) { dq[i] = 0; dm[i] = 0; have[i] = 0 }
 
-      for (i = 1; i < n; i++) {
+      for (i = 0; i < n; i++) {
         if (t[i] < start) continue
         b = int((t[i] - start) / bs)
         if (b < 0 || b >= nb) continue
-        dq[b] += q[i] - q[i-1]
-        dm[b] += m[i] - m[i-1]
-        have[b] = 1
+
+        # For first sample in a bucket, establish baseline; deltas computed
+        # from the previous sample overall (not per-bucket baseline)
+        if (i == 0) {
+          # First sample ever: no delta yet, just mark bucket as having data
+          have[b] = 1
+        } else {
+          dq[b] += q[i] - q[i-1]
+          dm[b] += m[i] - m[i-1]
+          have[b] = 1
+        }
       }
 
       # --- render: height = hit%, colour from gradient, idle = blank ------
@@ -455,8 +467,13 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
 
       out = ""
       for (i = 0; i < nb; i++) {
-        if (!have[i] || dq[i] <= 0) {
+        if (!have[i]) {
           # Idle bucket: no sample landed here, so use lowest-step color
+          out = out blankc ch[0] rst
+          continue
+        }
+        if (dq[i] <= 0) {
+          # Bucket has data but no delta (first sample only): show as idle
           out = out blankc ch[0] rst
           continue
         }
