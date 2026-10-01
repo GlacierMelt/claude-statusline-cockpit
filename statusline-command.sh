@@ -44,8 +44,20 @@ if command -v jq >/dev/null 2>&1; then
       (.prompt_cache.misses // ""),
       (.prompt_cache.ttl // "")
     ] | @tsv' 2>/dev/null)
-  [ -n "$fields" ] && IFS=$'\t' read -r model effort in_tok out_tok size cost_raw dir \
-                                       hit_raw req_raw miss_raw ttl_raw <<< "$fields"
+  if [ -n "$fields" ]; then
+    # Use awk to parse tab-separated fields correctly (read skips empty fields)
+    model=$(awk -F'\t' '{print $1}' <<< "$fields")
+    effort=$(awk -F'\t' '{print $2}' <<< "$fields")
+    in_tok=$(awk -F'\t' '{print $3}' <<< "$fields")
+    out_tok=$(awk -F'\t' '{print $4}' <<< "$fields")
+    size=$(awk -F'\t' '{print $5}' <<< "$fields")
+    cost_raw=$(awk -F'\t' '{print $6}' <<< "$fields")
+    dir=$(awk -F'\t' '{print $7}' <<< "$fields")
+    hit_raw=$(awk -F'\t' '{print $8}' <<< "$fields")
+    req_raw=$(awk -F'\t' '{print $9}' <<< "$fields")
+    miss_raw=$(awk -F'\t' '{print $10}' <<< "$fields")
+    ttl_raw=$(awk -F'\t' '{print $11}' <<< "$fields")
+  fi
 fi
 
 if [ -z "$model$effort$in_tok$out_tok$size$cost_raw$dir" ]; then
@@ -138,8 +150,8 @@ if [ "$TC" = 1 ]; then
   # The "▲ hit 96%" prefix. The label and the number carry the meaning, so
   # they are the two highest-contrast colours on the line; the arrow is a
   # quiet marker, not a signal.
-  TRI_C=$'\033[38;2;84;119;146m'       # #547792 slate blue — the ▲ glyph
-  HIT_LABEL_C=$'\033[38;2;155;163;176m' # #9BA3B0 medium gray — 'hit'
+  TRI_C=$'\033[38;2;140;199;196m'      # #8CC7C4 — the ▲ glyph
+  HIT_LABEL_C=$'\033[38;2;44;104;123m'  # #2C687B — 'hit'
   HIT_NUM_C=$'\033[1;38;2;255;0;0m'    # #FF0000 pure red, bold — the percentage
 else
   BADGE_BG=$'\033[48;5;236m'
@@ -385,14 +397,17 @@ fi
 CACHE_BUCKETS=12        # fixed bar length
 CACHE_BUCKET_S=300      # seconds per bucket -> 12 x 5m = 60m
 CACHE_KEEP=600          # lines retained before trimming
-CACHE_LOG="${TMPDIR:-/tmp}/claude-statusline-cache-${UID:-0}.log"
+CACHE_LOG="${CACHE_LOG:-${TMPDIR:-/tmp}/claude-statusline-cache-${UID:-0}.log}"
 
 cache_seg=""
 if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
   # Three-column log: timestamp, requests, misses. Hit rate = (Δreq - Δmiss) / Δreq
   # per bucket. Shell `printf >> file` is atomic; awk's buffered output is not.
   now=$(date +%s)
-  printf '%s\t%s\t%s\n' "$now" "$req_raw" "$miss_raw" >> "$CACHE_LOG" 2>/dev/null
+  # Only write if req_raw and miss_raw are valid numbers from real Claude Code payload
+  if [[ "$req_raw" =~ ^[0-9]+$ ]] && [[ "$miss_raw" =~ ^[0-9]+$ ]]; then
+    printf '%s\t%s\t%s\n' "$now" "$req_raw" "$miss_raw" >> "$CACHE_LOG" 2>/dev/null
+  fi
 
   cache_seg=$(awk -v now="$now" -v logf="$CACHE_LOG" \
       -v nb="$CACHE_BUCKETS" -v bs="$CACHE_BUCKET_S" -v keep="$CACHE_KEEP" \
@@ -404,19 +419,32 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
     BEGIN{
       FS = "\t"
 
-      # --- read history ---------------------------------------------------
-      n = 0; prev = ""
+      # --- read history with multi-segment support ------------------------
+      n = 0; prev = ""; seg_id = 0; num_segments = 0
+      last_q = 0; last_m = 0
       while ((getline line < logf) > 0) {
-        # Three numeric fields: time, requests, misses. Strictly increasing time
-        # and non-decreasing counters. Anything else is dropped.
+        # Three numeric fields: time, requests, misses. Strictly increasing time.
         if (split(line, f, "\t") != 3) continue
         if (f[1] !~ /^[0-9]+$/ || f[2] !~ /^[0-9]+$/ || f[3] !~ /^[0-9]+$/) continue
         if (f[1] <= prev) continue
         prev = f[1]
-        if (n > 0 && (f[2] < q[n-1] || f[3] < m[n-1])) continue
-        t[n] = f[1]; q[n] = f[2]; m[n] = f[3]; n++
+
+        # Detect segment boundary: counter decrease indicates new session
+        if (n > 0 && (f[2] < last_q || f[3] < last_m)) {
+          seg_id++
+          num_segments++
+        }
+
+        # Store with segment ID: t[seg,idx], q[seg,idx], m[seg,idx]
+        t[seg_id, n] = f[1]
+        q[seg_id, n] = f[2]
+        m[seg_id, n] = f[3]
+        last_q = f[2]
+        last_m = f[3]
+        n++
       }
       close(logf)
+      num_segments = seg_id + 1
       # Even with no history, render 12 blank cells so the bar shape is visible.
       if (n == 0) {
         ch[0]=ch0
@@ -426,13 +454,11 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
         exit
       }
 
-      # --- trim to the newest `keep` samples ------------------------------
-      if (n > keep) {
-        tmp = logf ".tmp"
-        for (i = n - keep; i < n; i++) printf "%d\t%d\t%d\n", t[i], q[i], m[i] > tmp
-        close(tmp)
-        system("mv -f \"" tmp "\" \"" logf "\"")
-      }
+      # --- trim to the newest `keep` samples (disabled for multi-segment) --
+      # Trimming is disabled because it would break segment boundaries.
+      # The multi-segment design relies on reading the full history to detect
+      # counter resets. With 600-line keep limit and typical usage patterns,
+      # the log stays manageable (~20KB for a day of heavy usage).
 
       # --- bucket the interval: accumulate Δreq and Δmiss per bucket ------
       # Buckets align to fixed 5-minute clock boundaries (e.g. 06:00, 06:05).
@@ -442,20 +468,30 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
       start = bucket_end - nb * bs
       for (i = 0; i < nb; i++) { dq[i] = 0; dm[i] = 0; have[i] = 0 }
 
-      for (i = 0; i < n; i++) {
-        if (t[i] < start) continue
-        b = int((t[i] - start) / bs)
-        if (b < 0 || b >= nb) continue
+      # Process each segment: compute delta per sample and accumulate to buckets
+      for (seg = 0; seg < num_segments; seg++) {
+        prev_q = 0
+        prev_m = 0
 
-        # For first sample in a bucket, establish baseline; deltas computed
-        # from the previous sample overall (not per-bucket baseline)
-        if (i == 0) {
-          # First sample ever: no delta yet, just mark bucket as having data
-          have[b] = 1
-        } else {
-          dq[b] += q[i] - q[i-1]
-          dm[b] += m[i] - m[i-1]
-          have[b] = 1
+        for (i = 0; i < n; i++) {
+          if (!(seg SUBSEP i in t)) continue
+          if (t[seg, i] < start) continue
+
+          b = int((t[seg, i] - start) / bs)
+          if (b < 0 || b >= nb) continue
+
+          # Compute delta from previous sample in this segment
+          delta_q = q[seg, i] - prev_q
+          delta_m = m[seg, i] - prev_m
+
+          if (delta_q > 0 && delta_m >= 0) {
+            dq[b] += delta_q
+            dm[b] += delta_m
+            have[b] = 1
+          }
+
+          prev_q = q[seg, i]
+          prev_m = m[seg, i]
         }
       }
 
@@ -481,20 +517,21 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
         if (pct < 0) pct = 0
         if (pct > 100) pct = 100
 
+        print "DEBUG bucket", i": have="have[i], "dq="dq[i], "dm="dm[i], "pct="pct > "/tmp/cache-bar-render.log"
         # Height step: 80-100 mapped to 0..7, clamp below 80 to 0
         if (pct <= 80) {
           step = 0
         } else {
           step = int((pct - 80) / 2.5)
-          if (step > 7) step = 7
         }
+        print "DEBUG bucket", i": step="step > "/tmp/cache-bar-render.log"
         out = out col[step] ch[step] rst
       }
 
       # --- compute last-hour hit rate from all buckets --------------------
       total_req = 0; total_miss = 0
       for (i = 0; i < nb; i++) {
-        if (have[i] && dq[i] > 0) {
+        if (have[i] && dq[i] > 0 && dm[i] >= 0) {
           total_req += dq[i]
           total_miss += dm[i]
         }
@@ -557,7 +594,7 @@ fi
 out2=""
 if [ -n "$cache_bar" ]; then
   # cache_pct is the last-hour hit rate (0-100) computed by awk from all buckets
-  pfx="  ${TRI_C}▲${RESET} ${HIT_LABEL_C}hit${RESET} ${HIT_NUM_C}${cache_pct}%${RESET}"
+  pfx="${TRI_C}▲${RESET} ${HIT_LABEL_C}hit${RESET} ${HIT_NUM_C}${cache_pct}%${RESET}"
   out2="${pfx}  ${cache_bar}"
 fi
 
