@@ -85,6 +85,15 @@ case "${COLORTERM:-}" in truecolor|24bit) TC=1 ;; esac
 [ "${TERM_PROGRAM:-}" = "WezTerm" ]   && TC=1
 case "${TERM:-}" in *-direct|*-truecolor) TC=1 ;; esac
 
+# One block per height step, U+2581 .. U+2588. Index is the step number, so the
+# colour array and this one are addressed by the same value. Kept as plain
+# variables rather than an array because they are handed to awk via -v below,
+# and a literal character is safer there than a \uXXXX escape: whether awk
+# decodes those depends on the build and the locale, while a character that
+# arrives as UTF-8 bytes goes through untouched.
+RAMP_CH0='▁'; RAMP_CH1='▂'; RAMP_CH2='▃'; RAMP_CH3='▄'
+RAMP_CH4='▅'; RAMP_CH5='▆'; RAMP_CH6='▇'; RAMP_CH7='█'
+
 if [ "$TC" = 1 ]; then
   BADGE_BG=$'\033[48;2;44;48;58m'      # #2c303a slate badge field
   BADGE_FG=$'\033[1;38;2;255;255;255m' # pure white, bold
@@ -106,12 +115,26 @@ if [ "$TC" = 1 ]; then
   DIR_C=$'\033[38;2;187;213;218m'      # #bbd5da pale ice — second line path
   GIT_C=$'\033[38;2;90;158;214m'
   DIRTY_C=$'\033[1;38;2;224;228;235m'
-  # Cache-history bar, three states: HIT (pale teal), MISS (warm amber), and
-  # IDLE (lowest step, for buckets with no sample at all). HIT is the quiet
-  # default, MISS signals dropped cache, IDLE shows gaps in traffic.
-  CACHE_HIT_C=$'\033[38;2;223;241;241m'  # #DFF1F1 — hit   (tuned for a LIGHT terminal)
-  CACHE_MISS_C=$'\033[38;2;255;198;176m' # #FFC6B0 — miss
-  CACHE_IDLE_C=$'\033[38;2;245;201;181m' # #F5C9B5 — idle (no sample)
+
+  # --- the eight-step amplitude ramp ---------------------------------------
+  # Bucket edges are 80, 82.5, 85, 87.5, 90, 92.5, 95, 97.5, 100 — 2.5 points
+  # per step, eight steps. Anything at or below 80% clamps into step 0, so the
+  # bar cannot show how far below it went: that is what the printed percentage
+  # beside it is for.
+  #
+  # Colours are the three-stop gradient: #FFC6B0 at 80%, #A5D7D5 at 90%,
+  # #DFF1F1 at 100%, interpolated in OKLab and sampled at the eight bucket
+  # midpoints (81.25, 83.75, ..., 98.75):
+  RAMP_C[0]=$'\033[38;2;245;201;181m'  # 81.25% #F5C9B5
+  RAMP_C[1]=$'\033[38;2;225;205;190m'  # 83.75% #E1CDBE
+  RAMP_C[2]=$'\033[38;2;202;210;200m'  # 86.25% #CAD2C8
+  RAMP_C[3]=$'\033[38;2;178;213;209m'  # 88.75% #B2D5D1
+  RAMP_C[4]=$'\033[38;2;172;218;216m'  # 91.25% #ACDAD8
+  RAMP_C[5]=$'\033[38;2;187;225;223m'  # 93.75% #BBE1DF
+  RAMP_C[6]=$'\033[38;2;201;231;230m'  # 96.25% #C9E7E6
+  RAMP_C[7]=$'\033[38;2;216;238;237m'  # 98.75% #D8EEED
+  CACHE_BLANK_C=$'\033[38;2;245;201;181m' # #F5C9B5 — idle bucket (no sample)
+
   # The "▲ hit 96%" prefix. The label and the number carry the meaning, so
   # they are the two highest-contrast colours on the line; the arrow is a
   # quiet marker, not a signal.
@@ -137,12 +160,21 @@ else
   DIR_C=$'\033[38;5;152m'              # nearest 256 to #bbd5da
   GIT_C=$'\033[38;5;74m'
   DIRTY_C=$'\033[1;38;5;252m'
-  # Cache-history bar. The 256 ramp has no pale-teal step at all, so HIT keeps
-  # the colour and loses the hue: 255 is a neutral white-grey. MISS and IDLE
-  # both sit in the amber range — 223 is #FFC6B0, the lowest step #F5C9B5.
-  CACHE_HIT_C=$'\033[38;5;255m'        # nearest 256 to #DFF1F1 (grey, loses the teal)
-  CACHE_MISS_C=$'\033[38;5;223m'       # nearest 256 to #FFC6B0
-  CACHE_IDLE_C=$'\033[38;5;223m'       # nearest 256 to #F5C9B5 (same as MISS in 256)
+
+  # The 256 cube cannot hold the mint end of the ramp, so these eight are chosen
+  # by hand along the nearest faces: warm (223) -> grey-green (187) -> teal
+  # (151/115) -> pale (152). Pairs repeat at the ends because the cube has no
+  # closer entry, which is a real limitation of this branch, not an oversight.
+  RAMP_C[0]=$'\033[38;5;223m'
+  RAMP_C[1]=$'\033[38;5;223m'
+  RAMP_C[2]=$'\033[38;5;187m'
+  RAMP_C[3]=$'\033[38;5;151m'
+  RAMP_C[4]=$'\033[38;5;115m'
+  RAMP_C[5]=$'\033[38;5;115m'
+  RAMP_C[6]=$'\033[38;5;152m'
+  RAMP_C[7]=$'\033[38;5;152m'
+  CACHE_BLANK_C=$'\033[38;5;223m'      # nearest 256 to #F5C9B5
+
   TRI_C=$'\033[38;5;109m'              # nearest 256 to #76abae
   HIT_LABEL_C=$'\033[38;5;236m'        # nearest 256 to #303841
   HIT_NUM_C=$'\033[38;5;196m'          # nearest 256 to #FF0000
@@ -356,34 +388,33 @@ CACHE_KEEP=600          # lines retained before trimming
 CACHE_LOG="${TMPDIR:-/tmp}/claude-statusline-cache-${UID:-0}.log"
 
 cache_seg=""
-if [ -n "$miss_raw" ]; then
-  # The sample is appended here rather than from inside awk. Two redraws can
-  # run at once, and a shell `printf >> file` is a single atomic write while
-  # awk's buffered output is not: interleaved writes tear a record in half and
-  # the mangled line then reads as a counter thousands of times too large.
+if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
+  # Three-column log: timestamp, requests, misses. Hit rate = (Δreq - Δmiss) / Δreq
+  # per bucket. Shell `printf >> file` is atomic; awk's buffered output is not.
   now=$(date +%s)
-  printf '%s\t%s\n' "$now" "$miss_raw" >> "$CACHE_LOG" 2>/dev/null
+  printf '%s\t%s\t%s\n' "$now" "$req_raw" "$miss_raw" >> "$CACHE_LOG" 2>/dev/null
 
   cache_seg=$(awk -v now="$now" -v logf="$CACHE_LOG" \
       -v nb="$CACHE_BUCKETS" -v bs="$CACHE_BUCKET_S" -v keep="$CACHE_KEEP" \
-      -v hit_c="$CACHE_HIT_C" -v miss_c="$CACHE_MISS_C" \
-      -v idle_c="$CACHE_IDLE_C" -v rst="$RESET" '
+      -v ch0="$RAMP_CH0" -v ch1="$RAMP_CH1" -v ch2="$RAMP_CH2" -v ch3="$RAMP_CH3" \
+      -v ch4="$RAMP_CH4" -v ch5="$RAMP_CH5" -v ch6="$RAMP_CH6" -v ch7="$RAMP_CH7" \
+      -v c0="${RAMP_C[0]}" -v c1="${RAMP_C[1]}" -v c2="${RAMP_C[2]}" -v c3="${RAMP_C[3]}" \
+      -v c4="${RAMP_C[4]}" -v c5="${RAMP_C[5]}" -v c6="${RAMP_C[6]}" -v c7="${RAMP_C[7]}" \
+      -v blankc="$CACHE_BLANK_C" -v rst="$RESET" '
     BEGIN{
       FS = "\t"
 
       # --- read history ---------------------------------------------------
       n = 0; prev = ""
       while ((getline line < logf) > 0) {
-        # Exactly two numeric fields, strictly increasing in time. Anything
-        # else is dropped: a torn line, a half-written record, or a stale file
-        # from before a format change. Without this check a merged line parses
-        # as a bogus counter and poisons every delta that follows it.
-        if (split(line, f, "\t") != 2) continue
-        if (f[1] !~ /^[0-9]+$/ || f[2] !~ /^[0-9]+$/) continue
+        # Three numeric fields: time, requests, misses. Strictly increasing time
+        # and non-decreasing counters. Anything else is dropped.
+        if (split(line, f, "\t") != 3) continue
+        if (f[1] !~ /^[0-9]+$/ || f[2] !~ /^[0-9]+$/ || f[3] !~ /^[0-9]+$/) continue
         if (f[1] <= prev) continue
         prev = f[1]
-        if (n > 0 && f[2] < m[n-1]) continue   # counter went backwards
-        t[n] = f[1]; m[n] = f[2]; n++
+        if (n > 0 && (f[2] < q[n-1] || f[3] < m[n-1])) continue
+        t[n] = f[1]; q[n] = f[2]; m[n] = f[3]; n++
       }
       close(logf)
       if (n == 0) { print ""; exit }
@@ -391,51 +422,52 @@ if [ -n "$miss_raw" ]; then
       # --- trim to the newest `keep` samples ------------------------------
       if (n > keep) {
         tmp = logf ".tmp"
-        for (i = n - keep; i < n; i++) printf "%d\t%d\n", t[i], m[i] > tmp
+        for (i = n - keep; i < n; i++) printf "%d\t%d\t%d\n", t[i], q[i], m[i] > tmp
         close(tmp)
         system("mv -f \"" tmp "\" \"" logf "\"")
       }
 
-      # --- bucket the interval covered by the bar -------------------------
-      # Three states. A bucket is MISS if `misses` rose during it, HIT if it
-      # had samples but no misses, and IDLE if no sample fell in that bucket.
-      # `now` is the current redraw, not the newest sample: after a quiet
-      # stretch the newest sample is old, and anchoring the window to it would
-      # slide the whole bar left and misplace every cell.
+      # --- bucket the interval: accumulate Δreq and Δmiss per bucket ------
       start = now - nb * bs
-      for (i = 0; i < nb; i++) { miss_at[i] = 0; have[i] = 0 }
+      for (i = 0; i < nb; i++) { dq[i] = 0; dm[i] = 0; have[i] = 0 }
+
       for (i = 1; i < n; i++) {
         if (t[i] < start) continue
         b = int((t[i] - start) / bs)
-        if (b >= 0 && b < nb) {
-          have[b] = 1
-          # m[i-1] belongs to the previous sample, which may fall before
-          # `start`; that is fine, the delta is still the right one.
-          if (m[i] > m[i-1]) miss_at[b] = 1
-        }
+        if (b < 0 || b >= nb) continue
+        dq[b] += q[i] - q[i-1]
+        dm[b] += m[i] - m[i-1]
+        have[b] = 1
       }
 
-      # --- render ---------------------------------------------------------
-      out = ""; run_state = -1; run = ""
+      # --- render: height = hit%, colour from gradient, idle = blank ------
+      ch[0]=ch0; ch[1]=ch1; ch[2]=ch2; ch[3]=ch3
+      ch[4]=ch4; ch[5]=ch5; ch[6]=ch6; ch[7]=ch7
+      col[0]=c0; col[1]=c1; col[2]=c2; col[3]=c3
+      col[4]=c4; col[5]=c5; col[6]=c6; col[7]=c7
+
+      out = ""
       for (i = 0; i < nb; i++) {
-        # State: 0=idle, 1=hit, 2=miss
-        cur = have[i] ? (miss_at[i] ? 2 : 1) : 0
-        if (cur != run_state && run != "") {
-          out = out col(run_state, run, hit_c, miss_c, idle_c, rst); run = ""
+        if (!have[i] || dq[i] <= 0) {
+          # Idle bucket: no sample landed here, so use lowest-step color
+          out = out blankc ch[0] rst
+          continue
         }
-        run_state = cur
-        run = run "x"
+        pct = (dq[i] - dm[i]) * 100.0 / dq[i]
+        if (pct < 0) pct = 0
+        if (pct > 100) pct = 100
+
+        # Height step: 80-100 mapped to 0..7, clamp below 80 to 0
+        if (pct <= 80) {
+          step = 0
+        } else {
+          step = int((pct - 80) / 2.5)
+          if (step > 7) step = 7
+        }
+        out = out col[step] ch[step] rst
       }
-      if (run != "") out = out col(run_state, run, hit_c, miss_c, idle_c, rst)
       print out
     }
-    function col(state, run, hit_c, miss_c, idle_c, rst,    c, i, s) {
-      # state: 0=idle, 1=hit, 2=miss
-      if (state == 2) c = miss_c
-      else if (state == 1) c = hit_c
-      else c = idle_c
-      for (i = 0; i < length(run); i++) s = s "■"
-      return c s rst
     }
   ' 2>/dev/null)
 fi
