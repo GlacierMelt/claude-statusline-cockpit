@@ -477,8 +477,14 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
           if (!(seg SUBSEP i in t)) continue
           if (t[seg, i] < start) continue
 
+          # `bucket_end` rounds UP to the next boundary, so a sample stamped
+          # exactly on it lands at b == nb — one past the last cell. Fold that
+          # into the newest bucket instead of dropping the sample, which is
+          # what the old `b >= nb` guard did: a silent loss of up to a full
+          # bucket of requests whenever `now` sat on a 5-minute mark.
           b = int((t[seg, i] - start) / bs)
-          if (b < 0 || b >= nb) continue
+          if (b < 0) continue
+          if (b >= nb) b = nb - 1
 
           # Compute delta from previous sample in this segment
           delta_q = q[seg, i] - prev_q
@@ -517,14 +523,16 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
         if (pct < 0) pct = 0
         if (pct > 100) pct = 100
 
-        print "DEBUG bucket", i": have="have[i], "dq="dq[i], "dm="dm[i], "pct="pct > "/tmp/cache-bar-render.log"
-        # Height step: 80-100 mapped to 0..7, clamp below 80 to 0
+        # Height step: 80-100 mapped onto the eight ramp entries 0..7.
+        # pct == 100 gives int(20/2.5) == 8, one past the end, and ch[8]/col[8]
+        # are unset — so the cell rendered as an empty string and the bar came
+        # out SHORTER the better the cache performed. Clamp to the last step.
         if (pct <= 80) {
           step = 0
         } else {
           step = int((pct - 80) / 2.5)
+          if (step > 7) step = 7
         }
-        print "DEBUG bucket", i": step="step > "/tmp/cache-bar-render.log"
         out = out col[step] ch[step] rst
       }
 
