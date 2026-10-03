@@ -152,7 +152,15 @@ if [ "$TC" = 1 ]; then
   # quiet marker, not a signal.
   TRI_C=$'\033[38;2;140;199;196m'      # #8CC7C4 — the ▲ glyph
   HIT_LABEL_C=$'\033[38;2;44;104;123m'  # #2C687B — 'hit'
-  HIT_NUM_C=$'\033[1;38;2;255;0;0m'    # #FF0000 pure red, bold — the percentage
+  HIT_NUM_C=$'\033[1;38;2;255;0;0m'    # #FF0000 pure red, bold — flat fallback
+  # The percentage is coloured by role: digits take these three in order
+  # (punctuation does not advance the count), "." and "%" are fixed.
+  HIT_ROLE=1
+  HIT_DIG_C=($'\033[1;38;2;255;0;0m'   # #FF0000 first digit
+             $'\033[1;38;2;251;27;27m' # #FB1B1B second digit
+             $'\033[1;38;2;248;54;54m') # #F83636 third digit
+  HIT_DOT_C=$'\033[1;38;2;192;197;201m' # #C0C5C9 decimal point
+  HIT_PCT_C=$'\033[1;38;2;187;213;218m' # #BBD5DA percent sign
 else
   BADGE_BG=$'\033[48;5;236m'
   BADGE_FG=$'\033[1;38;5;231m'
@@ -189,7 +197,8 @@ else
 
   TRI_C=$'\033[38;5;66m'               # nearest 256 to #547792
   HIT_LABEL_C=$'\033[38;5;248m'        # nearest 256 to #9BA3B0
-  HIT_NUM_C=$'\033[38;5;196m'          # nearest 256 to #FF0000
+  HIT_NUM_C=$'\033[1;38;5;196m'        # nearest 256 to #FF0000, bold
+  HIT_ROLE=0                           # flat here: the pale tones have no close 256 entry
 fi
 
 FILLED_CHAR='■'
@@ -551,8 +560,16 @@ if [ -n "$req_raw" ] && [ -n "$miss_raw" ]; then
         if (hour_pct > 100) hour_pct = 100
       }
 
+      # Round to tenths half away from zero, then clamp, so the string is at
+      # most five characters: printf "%.1f" of 99.95 would give "100.0".
+      d = hour_pct * 10
+      r = (d >= 0) ? int(d + 0.5) : -int(-d + 0.5)
+      pct = r / 10
+      if (pct > 99.9) pct = 99.9
+      if (pct < 0) pct = 0
+
       print out
-      print int(hour_pct + 0.5)  # second line: rounded percentage
+      printf "%.1f\n", pct  # second line: one-decimal percentage
     }' 2>/dev/null)
 fi
 
@@ -601,8 +618,23 @@ fi
 
 out2=""
 if [ -n "$cache_bar" ]; then
-  # cache_pct is the last-hour hit rate (0-100) computed by awk from all buckets
-  pfx="${TRI_C}▲${RESET} ${HIT_LABEL_C}hit${RESET} ${HIT_NUM_C}${cache_pct}%${RESET}"
+  # cache_pct is the last-hour hit rate (0.0-99.9) computed by awk from all buckets
+  pct_s="${cache_pct}%"
+  if [ "$HIT_ROLE" = 1 ]; then
+    pct_out=""; di=0
+    for (( i = 0; i < ${#pct_s}; i++ )); do
+      ch=${pct_s:i:1}
+      case "$ch" in
+        .) pct_out+="${HIT_DOT_C}${ch}" ;;
+        %) pct_out+="${HIT_PCT_C}${ch}" ;;
+        *) pct_out+="${HIT_DIG_C[di < 2 ? di : 2]}${ch}"; di=$((di + 1)) ;;
+      esac
+    done
+    pct_out+="${RESET}"
+  else
+    pct_out="${HIT_NUM_C}${pct_s}${RESET}"
+  fi
+  pfx="${TRI_C}▲${RESET} ${HIT_LABEL_C}hit${RESET} ${pct_out}"
   out2="${pfx}  ${cache_bar}"
 fi
 
