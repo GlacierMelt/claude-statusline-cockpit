@@ -6,7 +6,7 @@ cost, **prompt cache hit rate visualization**, and your current path and git bra
 
 ```
  Opus 5.5  | medium  tok 290k/1M (29%) ■■■■■■■················ $9.54
- ▲ hit 94%  ▃▁▅▅▁█████▁▆
+ ▲ hit 94.2%  ▃▁▅▅▁█████▁▆
  ~/code/my-project · main*
 ```
 
@@ -21,6 +21,8 @@ cost, **prompt cache hit rate visualization**, and your current path and git bra
   Each bucket is 5 minutes, aligned to wall-clock boundaries (06:00, 06:05, etc.).
   **Multi-session aware**: correctly merges data from multiple Claude Code sessions
   sharing the same cache log, filtering negative deltas to prevent >100% rates.
+  The last-hour hit rate sits in front of the bar to one decimal place, capped
+  at `99.9%` so it never grows past five characters.
 - **Path and git branch** on the third line, with a `*` when the tree is dirty.
 - **Degrades instead of wrapping.** The bar and then the cost drop away as the
   terminal narrows; below ~40 columns you are left with just the model badge.
@@ -116,6 +118,31 @@ tones, making performance trends readable at a glance. Each color is defined in 
 - `cache-bar-live-demo.html` — Real-time simulation with speed controls
 - `cache-bar-multi-segment-fix.html` — Multi-session bug fix documentation
 
+### The hit-rate number
+
+The percentage after `▲ hit` is the hit rate across all 12 buckets. It is
+rounded half away from zero to one decimal place and clamped to `0.0`–`99.9`,
+so the field is at most five characters wide. `100.0%` never appears, because
+`printf "%.1f"` of 99.95 would otherwise produce it.
+
+On truecolor terminals each character is coloured by its role, and all five are
+bold:
+
+| Character | Colour |
+| - | - |
+| 1st digit | `#FF0000` |
+| 2nd digit | `#FB1B1B` |
+| 3rd digit | `#F83636` |
+| `.` | `#C0C5C9` |
+| `%` | `#BBD5DA` |
+
+Digits are counted left to right with the punctuation skipped, so a
+four-character value like `5.0%` uses only the first two reds. The colours live
+in `HIT_DIG_C`, `HIT_DOT_C` and `HIT_PCT_C`. Set `HIT_ROLE=0` to fall back to the
+single flat colour in `HIT_NUM_C`. The 256-colour branch always uses that flat
+colour, bold red (`196`), because the pale symbol tones have no close entry in
+the 256 ramp.
+
 ### Color customization
 
 Every colour is a named variable near the top of the script, in two branches —
@@ -205,7 +232,8 @@ something this script controls. `claude --debug` logs
 dark terminal. On a light background the path colour (`#bbd5da`) is low-contrast
 and `#233d4d` — the pipe separator — nearly disappears. If you work mostly in a
 light theme, raise `DIR_C` and `PIPE_C`; there's a comment at `PIPE_C` marking it
-as the one fixed colour that doesn't adapt.
+as the one fixed colour that doesn't adapt. The hit-rate `.` and `%`
+(`#C0C5C9`, `#BBD5DA`) are also faint on light grounds, at about 1.5–1.7:1.
 
 **This cannot auto-detect your terminal theme.** A `statusLine` command gets no
 theme in its payload and can't read the terminal it's drawing into, so the two
