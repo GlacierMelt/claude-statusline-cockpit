@@ -157,8 +157,8 @@ if [ "$TC" = 1 ]; then
   # (punctuation does not advance the count), "." and "%" are fixed.
   HIT_ROLE=1
   HIT_DIG_C=($'\033[1;38;2;255;0;0m'   # #FF0000 first digit
-             $'\033[1;38;2;251;27;27m' # #FB1B1B second digit
-             $'\033[1;38;2;248;54;54m') # #F83636 third digit
+             $'\033[1;38;2;255;40;44m' # #FF282C second digit
+             $'\033[1;38;2;255;86;87m') # #FF5657 third digit
   HIT_DOT_C=$'\033[1;38;2;192;197;201m' # #C0C5C9 decimal point
   HIT_PCT_C=$'\033[1;38;2;187;213;218m' # #BBD5DA percent sign
 else

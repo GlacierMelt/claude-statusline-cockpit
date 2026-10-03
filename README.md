@@ -131,8 +131,8 @@ bold:
 | Character | Colour |
 | - | - |
 | 1st digit | `#FF0000` |
-| 2nd digit | `#FB1B1B` |
-| 3rd digit | `#F83636` |
+| 2nd digit | `#FF282C` |
+| 3rd digit | `#FF5657` |
 | `.` | `#C0C5C9` |
 | `%` | `#BBD5DA` |
 
