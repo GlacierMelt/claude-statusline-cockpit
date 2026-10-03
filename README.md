@@ -143,6 +143,10 @@ single flat colour in `HIT_NUM_C`. The 256-colour branch always uses that flat
 colour, bold red (`196`), because the pale symbol tones have no close entry in
 the 256 ramp.
 
+The `hit` label itself is `#233D4D`, not bold — the same deep petrol as the
+line-1 pipe separator, so it recedes behind the number. It lives in
+`HIT_LABEL_C`; the 256-colour branch uses `237`.
+
 ### Color customization
 
 Every colour is a named variable near the top of the script, in two branches —
@@ -230,7 +234,7 @@ something this script controls. `claude --debug` logs
 
 **The light/dark contrast is uneven by design.** The palette was tuned against a
 dark terminal. On a light background the path colour (`#bbd5da`) is low-contrast
-and `#233d4d` — the pipe separator — nearly disappears. If you work mostly in a
+and `#233d4d` — the pipe separator and the `hit` label — nearly disappears. If you work mostly in a
 light theme, raise `DIR_C` and `PIPE_C`; there's a comment at `PIPE_C` marking it
 as the one fixed colour that doesn't adapt. The hit-rate `.` and `%`
 (`#C0C5C9`, `#BBD5DA`) are also faint on light grounds, at about 1.5–1.7:1.

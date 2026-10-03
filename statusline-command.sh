@@ -151,7 +151,7 @@ if [ "$TC" = 1 ]; then
   # they are the two highest-contrast colours on the line; the arrow is a
   # quiet marker, not a signal.
   TRI_C=$'\033[38;2;140;199;196m'      # #8CC7C4 — the ▲ glyph
-  HIT_LABEL_C=$'\033[38;2;44;104;123m'  # #2C687B — 'hit'
+  HIT_LABEL_C=$'\033[38;2;35;61;77m'    # #233D4D — 'hit'
   HIT_NUM_C=$'\033[1;38;2;255;0;0m'    # #FF0000 pure red, bold — flat fallback
   # The percentage is coloured by role: digits take these three in order
   # (punctuation does not advance the count), "." and "%" are fixed.
@@ -196,7 +196,7 @@ else
   CACHE_BLANK_C=$'\033[38;5;223m'      # nearest 256 to #F5C9B5
 
   TRI_C=$'\033[38;5;66m'               # nearest 256 to #547792
-  HIT_LABEL_C=$'\033[38;5;248m'        # nearest 256 to #9BA3B0
+  HIT_LABEL_C=$'\033[38;5;237m'        # nearest 256 to #233D4D
   HIT_NUM_C=$'\033[1;38;5;196m'        # nearest 256 to #FF0000, bold
   HIT_ROLE=0                           # flat here: the pale tones have no close 256 entry
 fi
