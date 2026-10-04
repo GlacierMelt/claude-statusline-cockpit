@@ -124,7 +124,7 @@ if [ "$TC" = 1 ]; then
   # The "▲ hit 96%" prefix. The label and the number carry the meaning, so
   # they are the two highest-contrast colours on the line; the arrow is a
   # quiet marker, not a signal.
-  TRI_C=$'\033[38;2;140;199;196m'      # #8CC7C4 — the ▲ glyph
+  TRI_C=$'\033[38;2;132;165;152m'      # #84A598 — the ▲ glyph
   HIT_LABEL_C=$'\033[38;2;44;104;123m'  # #2C687B — 'hit'
   HIT_NUM_C=$'\033[1;38;2;255;0;0m'    # #FF0000 pure red, bold — flat fallback
   # The percentage is coloured by role: digits take these three in order
@@ -169,7 +169,7 @@ else
   RAMP_C[7]=$'\033[38;5;152m'
   CACHE_BLANK_C=$'\033[38;5;223m'      # nearest 256 to #F5C9B5
 
-  TRI_C=$'\033[38;5;66m'               # nearest 256 to #547792
+  TRI_C=$'\033[38;5;108m'              # nearest 256 to #84A598
   HIT_LABEL_C=$'\033[38;5;248m'        # original project's 256-color 'hit' label
   HIT_NUM_C=$'\033[1;38;5;196m'        # nearest 256 to #FF0000, bold
   HIT_ROLE=0                           # flat here: the pale tones have no close 256 entry
