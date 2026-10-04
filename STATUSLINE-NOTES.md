@@ -1,260 +1,100 @@
-# Status line — improvement notes
+# 实现与维护核对笔记
 
-Findings from inspecting a real status-line payload (Claude Code 2.1.284,
-model `claude-opus-5-5[1m]`, effort `xhigh`) and from a line-by-line check of
-`statusline-command.sh`. Everything below is measured, not assumed.
+本文是当前代码的维护索引，配合 README 阅读；不是本机部署日志，也不是旧修复报告的逐段追加。历史本机核验留在被忽略的 `verification/`，其中早期白名单、空闲补桶、问号/黑点等描述已被后续实现取代。
 
-Nothing here has been implemented. The current script is unchanged.
+## 1. 审核基准与不可擅改项
 
----
+- 原项目基准 `0983e03` 与未修改的 06:26 原项目备份确认 `hit` 真彩 `#2C687B`、256 色 248。旧安装/review 的 `#233D4D` 不是该标签基准。
+- 保持数字 role 红色序列、小数点/百分号独立颜色、256 色粗体平色、一位小数及真正 `100.0%`。
+- 保持八档字形/颜色、12 格、原最低档未知占位、宽窄换行与所有字体/布局，不以“改进”名义新增 `~`、问号柱或黑点。
+- 本轮仅 README、本文与 `.gitignore`；不改运行语义/测试/demos，不安装、不动 settings/pin、生产账本，不提交/推送。
 
-## What the script reads today
+## 2. 从入口到输出：代码核对点
 
-Eight fields out of more than forty available:
+| 入口/函数 | 应说明的行为 |
+| --- | --- |
+| shell Python 选择及 helper fallback | override/pin/`python3`；helper 失败时独立 parser。所有 Python 不可用不能保证保留 payload |
+| `statusline_input.context_fields` | current R+W+U → total_input_tokens；官方百分比优先；未知不造零；output 不加入 |
+| `input_fields` | model/effort/cost/path 独立于 SQLite；控制字符清理 |
+| `discover` | 所有项目 main/subagent、可选现存 transcript_path、可选 feed；scope 不限制摄取 |
+| `parse_transcript` | 版本元数据，逐项身份/带时区时间/assistant角色/stop/整型 R-W-U 合同 |
+| `transcript_exclusion_reason` / `quarantine` | 显式 API-error/synthetic 隔离；不以全零或 stop_sequence 判定请求；保留原 events |
+| `History.put` / `_insert` | 五段唯一身份、final usage 冲突诊断、未来隔离、pending累计替换、完成后入账 |
+| `_counter` | 显式 epoch 基线、首快照不加权、不能按诊断 miss/重绘次数造用量 |
+| `ingest_file` | 完整行 checkpoint；旋转/截断安全重读；坏完整 JSON 回滚 |
+| `resolve_transcript_issues` | 原诊断保留；路径/行/时间/scope/已入账最终计数匹配后才恢复 |
+| `view` / `_build_view` | event时间轴、最新12个活跃桶、scope、padding/quality；非墙钟小时 |
+| `percentage` / `ramp_step` | 先ΣR/W/U再除、十分之一整数舍入；八档用未舍入单桶值 |
+| `bridge` / `save_fallback` | DB COMMIT后使用candidate，sidecar同scope/锁/拒绝旧revision/原子替换 |
+| `install_support.install` | runtime/settings预验证；完整包staging；包与settings各自replace，非跨文件全局原子 |
 
-```
-.model.display_name              .workspace.current_dir
-.effort.level                    .context_window.context_window_size
-.context_window.total_input_tokens
-.context_window.total_output_tokens
-.cost.total_cost_usd
-```
+## 3. 第二行的现行不变量
 
----
-
-## Recommended changes
-
-### 1. Use `used_percentage` instead of computing it
-
-**The current formula is right by accident, not by construction.**
-
-The script computes `(total_input_tokens + total_output_tokens) / context_window_size`.
-Claude Code computes `used_percentage` from the input side only — `input_tokens +
-cache_creation_input_tokens + cache_read_input_tokens` — and deliberately excludes
-output tokens.
-
-In the captured session, `total_output_tokens` was **1**, so adding it changed
-nothing and both agreed at 19%. But that is a property of this particular
-session, not of the formula. When output is large the two will diverge.
-
-```sh
-# current
-used=$(( in_tok + out_tok ))
-pct=$(( (used * 100 + size / 2) / size ))
-
-# correct — the field is already computed and already correct
-pct=${used_pct:-0}
+```text
+无新有效用量 → 整行不变
+同桶新的唯一完成用量 → 最右格/整体重算，不平移
+下一更晚有请求桶 → 只推进一格，跳过任意数量空闲桶
 ```
 
-Add `(.context_window.used_percentage // 0)` to the single-pass `jq` call and to
-the `scalar` fallback in the no-jq branch.
+- 十二格是 12 个有请求证据的五分钟桶；不是连续钟表一小时。
+- 每桶用 `event_ms // 300000` 定位。padding 无时间/权重，未知诊断不能制造活动槽位。
+- 默认跨项目/会话/子会话共享；显式 scope 是 AND 精确过滤，sidecar 也按同 scope 回退。
+- `R/(R+W+U)` 不取请求百分比平均，不用 request/miss 次数；TTL 不重分类 R，不推进轴。
+- 真零完成请求有身份/活跃桶但权重加零；无分母内部未知。客户端全零错误提示不占桶。
+- 未完成流只保留 pending，累计字段覆盖而非相加；重复 stop 与重复读取不加权。
+- 迟到事件、历史恢复、明确隔离、scope切换与投影策略升级可能修正视图，不等于空闲滚动。
+- `revision` 是投影修订号，既可能因新事件增加，也可能因已证实的隔离/诊断恢复增加，不能当请求计数。
+- UI 可以不显露 `partial/unknown`；必须在私有审计中保留质量，不把占位声称为实测0%。
 
-**Note:** keep reading `total_input_tokens` and `total_output_tokens` if the
-`174.2k/1M` display is worth keeping — those are current-context figures, which
-is the right semantic for a context bar. Only the *percentage* should come from
-the precomputed field.
+## 4. 合同兼容与恢复的维护规则
 
----
+应用版本不再作为 allowlist gate。保持已有合同的更新/新增字段可以直接读；改名、类型/语义变化或新 stop reason 必须显式验证，不能猜测。观察版本清单不决定资格。
 
-### 2. Show cache hit ratio
+`TRANSCRIPT_CONTRACT_POLICY` 只在接受合同确实变化时提升。每路径 `transcript_replays` 记录该号；首次或升级从头重放完整行，已有完整身份键去重，之后继续增量。
 
-**The single most useful field that is not currently displayed.**
+`resolved_issues` 仅消解已证实恢复的合同诊断：匹配来源路径、原行号、原事件时间、project/session/conversation，确认该完整请求的最终R/W/U已经入账且未隔离。保留原 `issues`，冲突/未来等非可恢复诊断不自动解除。只恢复诊断也要失效投影。
 
-`prompt_cache.hit_ratio` was **0.9620** with a **5m** TTL. Every cache miss
-rebuilds tens of thousands of tokens: `recache_tokens_if_cold` was **214,165**
-in this session, and the one recorded miss cost `miss_recache_tokens: 184,347`.
+重放、入账、恢复、checkpoint、策略号与视图共用 refresh 事务；完整 JSON 坏行使其全部回滚，半写尾行保留在最后一个完整换行位置。不得先提升 replay 标记后再尝试补账。
 
-At a 5-minute TTL the cache expires during any pause — reading a long file,
-waiting on a build, stepping away. A hit ratio drifting below ~0.9 means the
-session is silently paying to rebuild context it already had.
+2026-10-03 上轮本机报告补回5个唯一请求、保留9条原诊断并标记恢复；83.0%是当时窗口快照。三套Python的106项通过也是该轮记录，不是固定输出或任意未来环境承诺。
 
-```sh
-# prompt_cache.hit_ratio is 0..1; render as a percentage
-hit=$(awk -v h="$hit_raw" 'BEGIN{ if (h=="") exit; printf "%d%%", h*100 + 0.5 }')
-```
+## 5. 状态文件与故障边界
 
-Worth pairing with `prompt_cache.ttl` (`5m` here), since the fix for a low ratio
-is usually "stop leaving it idle".
+| 状态 | 保留理由 |
+| --- | --- |
+| events | 五段去重键、事件/观察时间、R/W/U、来源版本/schema、粗区间质量 |
+| checkpoints | 源路径、device/inode、offset/sequence、边缘hash，提交与用量一致 |
+| pending | 尚未完成的累计字段，不应进入活跃轴 |
+| counters | source/project/session/conversation/epoch 基线，首快照不差分到零 |
+| issues / resolved_issues | 原始诊断及已证实恢复证据，不能静默删除原诊断 |
+| quarantined | 明确客户端错误/未来事件等隔离身份，投影不得重新计入 |
+| transcript_replays | 各路径合同重放策略，不是Claude版本号 |
+| meta / views | 全局投影revision、一次性隔离策略、各scope已提交视图 |
+| `.view.json` sidecar | 提交后可读的fallback，不含正文但仍含私有时间/计数/scope |
 
-`prompt_cache` is only present once caching has been observed, so guard it:
+SQLite WAL/FULL/BEGIN IMMEDIATE保护refresh；初始化与sidecar不在同一数据库事务里。sidecar写失败不撤销已提交candidate，也意味着下一次fallback可能较旧。scope匹配/轴策略校验失败不能借用其他保存视图。
 
-```sh
-[ -n "$hit_raw" ] && hit_seg="  ${TOK_LABEL_C}cache${RESET} ${...}${hit}${RESET}"
-```
+维护只compact，不TTL删除、不tail-N裁剪。旧三列日志不导入、不改写。默认账本会增长；视图重建扫描保留的所选events，不承诺常数成本。
 
----
+**生产只读核验禁用 `History`、bridge、`--inspect`、`--maintain`。** `--inspect`也会建schema/WAL并写视图。需要读生产库只能使用SQLite URI `mode=ro`；维护/回退演练用隔离副本。旧DB快照不能覆盖实时账本。
 
-### 3. Show session duration
+## 6. 测试和发布核对清单
 
-`cost.total_duration_ms` was **20,595,151 (5h43m)** with
-`total_api_duration_ms` **12,955,207 (3h35m)** — meaning roughly **63% of wall
-clock was spent waiting on the API**.
+- [ ] `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v`；记录实际解释器/项数/结果，不沿用旧日志冒充本轮。
+- [ ] `bash -n statusline-command.sh install.sh`、可用时 `node --check demos/cache-demo.js`、`git diff --check`。
+- [ ] fixture证据覆盖同桶更新、跨一天只移一格、空闲第二行byte freeze、weighted oracle、完整身份、零/流/客户端错误、scope、失败回滚与安全恢复。
+- [ ] 宽窄和truecolor/256色各测；fixture/浏览器通过不等于真实hostfooter无裁剪。Linux和任意未来Claude版本不冒充已现场验证。
+- [ ] 安装只在明确授权时进行，验证整包/pin/settings一致；不为刷新UI发`hi`或API请求。
+- [ ] 检查stage没有转录/DB/备份/完整配置/本机verification产物。`.gitignore`仅保护未跟踪候选，不替代内容审查，不改变已跟踪项。
+- [ ] 保留已有未提交/未跟踪成果；不reset、不清历史、不自动commit/push；需要远端同步先向用户列出待同步内容。
 
-Duration is cheap to render and useful to see; the API ratio is interesting but
-probably too much for a status line that must read at a glance. Consider showing
-duration alone, and only surfacing the ratio in a long session.
+可发布的是运行源码、安装器、通用文档、合成测试与合成演示数据。专项 `verify_*` 脚本应先读其行为再单独授权；输出留私有，不进入公开库。
 
-```sh
-dur=$(awk -v ms="$dur_raw" 'BEGIN{
-  s = int(ms/1000); h = int(s/3600); m = int((s%3600)/60)
-  if (h > 0) printf "%dh%02dm", h, m; else printf "%dm", m
-}')
-```
+## 7. 本轮发现但不修改的代码/演示表述
 
----
+- demos legend仍有`? unknown`、`~ partial evidence`文字，但实际JS状态行复用原最低档并去掉`~`。这里仅标记文案不一致，不改演示UI。
+- shell旧注释写“right-aligned cost”，实际输出为固定一格间距紧跟前段；README依据输出代码，不照抄注释。
+- 第二行默认host margin源于特定版本测量；第一行不是完整Unicode宽度计算，第三行未按COLUMNS主动截断。不要把三逻辑行承诺成任意终端的三物理行。
+- helper独立回退不等于任意解释器故障都可恢复；解释器可定位但坏掉、独立parser也失败时，payload元数据无法保留。
 
-## Fields that are NOT available
-
-Ten candidate fields were absent from the real payload. Do not write code that
-assumes any of them exist without a presence check.
-
-| field | why it is missing |
-| - | - |
-| `rate_limits` (+ `five_hour`, `seven_day`, `spend_limit`) | Only for claude.ai Pro/Max subscribers or a gateway with a spend limit configured. **Never delivered to API-key users.** This session runs through a local proxy, so it is absent. |
-| `worktree` | Only during a Claude Code worktree session. |
-| `workspace.git_worktree` | Only when the cwd is inside some linked worktree. |
-| `workspace.repo` | Only when `origin` resolves to a recognised host. |
-| `agent` | Only with `--agent` or an agent setting. |
-| `pr` | Only with an associated pull request. |
-| `vim` | Only with vim mode enabled. |
-
-**This rules out usage-quota display**, which would otherwise have been the most
-valuable addition. It cannot be worked around — the data is never sent.
-
----
-
-## Fields available but probably not worth the space
-
-| field | value seen | verdict |
-| - | - | - |
-| `output_style.name` | `default` | Constant for most users |
-| `version` | `2.1.284` | No routine value |
-| `fast_mode` | `false` | Already visible from behaviour |
-| `thinking.enabled` | `true` | Rarely changes mid-session |
-| `session_name` | `冰川蓝配色组合` | An AI-generated title; changes as the topic drifts |
-| `model.id` | `claude-opus-5-5[1m]` | `display_name` is already used |
-| `cost.total_lines_added/removed` | 1486 / 424 | Cheap activity signal, but low priority |
-| `workspace.added_dirs` | `[]` | Only worth showing when non-empty |
-| `prompt_id` | UUID | Debugging only |
-
----
-
-## Corrections to earlier claims
-
-Two things asserted before the payload was inspected that turned out to be wrong.
-
-**The progress bar was not inconsistent.** Pixel-run measurement of the
-screenshot suggested a 32-cell bar with 4 filled (12.5%) against a 17% label.
-Recomputing the script's arithmetic shows `bar_w` is capped at **26** — a 32-cell
-bar is unreachable at any terminal width:
-
-```
-avail * 55 / 100  ->  clamped to max 40  ->  * 2/3  ->  26
-```
-
-The "32 cells" was an antialiasing artefact of my measurement. With the real
-payload the bar reads `5 of 26 = 19.2%` against a `19%` label. **The bar and the
-label agree; there is no bug here.**
-
-**`rate_limits` was recommended, then found absent.** The recommendation came
-from documentation rather than observation. It is not deliverable in this setup.
-
----
-
-## Unrelated finding: `model` is gone from settings.json
-
-`~/.claude/settings.json` has no `model` key, and none of the three backups in
-`~/.claude/` have one either — including the oldest, which contained only
-`env`. The key was already absent before this work began, so nothing here
-removed it.
-
-Something else did rewrite the file between 04:45 and 05:52: the 04:45 backup
-holds `['env', 'statusLine']` while the current file holds
-`['autoCompactWindow', 'env', 'modelSettings', 'skipDangerousModePermissionPrompt',
-'statusLine']`. Three keys were added by some other tool.
-
-Worth checking whether `cc-switch` (or whatever wrote those) also clobbers
-MCP servers, skills, or prompt config.
-
----
-
-## Reference: the captured payload
-
-Kept at `/tmp/sl_payload_reference.json` (temporary — copy it somewhere durable
-if it is still wanted after a reboot).
-
-```json
-{
-  "session_id": "eac27173-2f65-4bd1-bf02-808bf572017b",
-  "effort": { "level": "xhigh" },
-  "session_name": "冰川蓝配色组合",
-  "model": {
-    "id": "claude-opus-5-5[1m]",
-    "display_name": "Opus 5.5 (1M context)"
-  },
-  "workspace": {
-    "current_dir": "/Users/eryck-petersen/AI/CODEX/LLM MODEL TEST/Opus_5-5",
-    "project_dir": "/Users/eryck-petersen/AI/CODEX/LLM MODEL TEST/Opus_5-5",
-    "added_dirs": []
-  },
-  "version": "2.1.284",
-  "output_style": { "name": "default" },
-  "cost": {
-    "total_cost_usd": 42.29,
-    "total_duration_ms": 20595151,
-    "total_api_duration_ms": 12955207,
-    "total_lines_added": 1486,
-    "total_lines_removed": 424
-  },
-  "context_window": {
-    "total_input_tokens": 214192,
-    "total_output_tokens": 1,
-    "context_window_size": 1000000,
-    "current_usage": {
-      "input_tokens": 372,
-      "output_tokens": 1,
-      "cache_creation_input_tokens": 72,
-      "cache_read_input_tokens": 213748
-    },
-    "used_percentage": 21,
-    "remaining_percentage": 79
-  },
-  "exceeds_200k_tokens": true,
-  "prompt_cache": {
-    "warm": true,
-    "caching_observed": true,
-    "ttl": "5m",
-    "requests": 33,
-    "misses": 1,
-    "hit_ratio": 0.9620,
-    "recache_tokens_if_cold": 214165
-  },
-  "fast_mode": false,
-  "thinking": { "enabled": true }
-}
-```
-
-Absent keys worth noting: `rate_limits`, `worktree`, `workspace.git_worktree`,
-`workspace.repo`, `agent`, `pr`, `vim`.
-
----
-
-## Suggested order of work
-
-1. **`used_percentage`** — smallest change, removes a latent bug, no new render.
-2. **Cache hit ratio** — highest value per column, but needs a presence guard.
-3. **Duration** — cheap, purely additive.
-
-The `xhigh` effort level renders correctly today and needs no change; it is a
-valid level (`low` / `medium` / `high` / `xhigh` / `max`) delivered as-is.
-
----
-
-## Verified-good, no action needed
-
-- `bar_w` arithmetic and the fill calculation (checked against real values)
-- The `effort.level` display — `xhigh` is the real upstream value
-- The `(1M context)` stripping from `model.display_name`
-- The single-pass `jq` read and the no-jq `scalar` fallback
-- The merged `git status --porcelain -b` call for branch + dirty flag
-- The cost sheen (`SHEEN=gradient` / `spot` / `off`) and its layout measurement
+任何后续修订这些点都应另行确认范围，并沿用现有UI/配色基准，而非在文档整理中顺手改运行行为。

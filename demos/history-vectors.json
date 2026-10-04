@@ -1,0 +1,1884 @@
+{
+  "schema": "cockpit-demo/v1",
+  "fixture_only": true,
+  "suites": {
+    "live": [
+      {
+        "label": "Recovered requests",
+        "description": "Three genuine completed requests establish the activity window.",
+        "now_ms": 1700100000100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 3,
+          "anchor_ms": 1700100000000,
+          "anchor_bucket": 5667000,
+          "percentage": "90.5%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0",
+            "4",
+            "7"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666989,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5666997,
+              "read": 900,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667000,
+              "read": 1000,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            }
+          ],
+          "read": 1900,
+          "write": 0,
+          "uncached": 200,
+          "revision": 3,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "Idle +5 minutes",
+        "description": "Wall time passes; no new request, no movement.",
+        "now_ms": 1700100300100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 3,
+          "anchor_ms": 1700100000000,
+          "anchor_bucket": 5667000,
+          "percentage": "90.5%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0",
+            "4",
+            "7"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666989,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5666997,
+              "read": 900,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667000,
+              "read": 1000,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            }
+          ],
+          "read": 1900,
+          "write": 0,
+          "uncached": 200,
+          "revision": 3,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "Idle +1 hour / TTL expired",
+        "description": "No cache operation occurred. TTL is not usage.",
+        "now_ms": 1700103600100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 3,
+          "anchor_ms": 1700100000000,
+          "anchor_bucket": 5667000,
+          "percentage": "90.5%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0",
+            "4",
+            "7"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666989,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5666997,
+              "read": 900,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667000,
+              "read": 1000,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            }
+          ],
+          "read": 1900,
+          "write": 0,
+          "uncached": 200,
+          "revision": 3,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "Idle +1 day",
+        "description": "The complete label, ratio and twelve cells remain frozen.",
+        "now_ms": 1700186400100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 3,
+          "anchor_ms": 1700100000000,
+          "anchor_bucket": 5667000,
+          "percentage": "90.5%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0",
+            "4",
+            "7"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666989,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5666997,
+              "read": 900,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667000,
+              "read": 1000,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            }
+          ],
+          "read": 1900,
+          "write": 0,
+          "uncached": 200,
+          "revision": 3,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "Repeat the same records",
+        "description": "Duplicate identities are ignored, regardless of later observation time.",
+        "now_ms": 1700186400100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 3,
+          "anchor_ms": 1700100000000,
+          "anchor_bucket": 5667000,
+          "percentage": "90.5%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0",
+            "4",
+            "7"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666989,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5666997,
+              "read": 900,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667000,
+              "read": 1000,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            }
+          ],
+          "read": 1900,
+          "write": 0,
+          "uncached": 200,
+          "revision": 3,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "New request after idle",
+        "description": "One new occupied bucket advances ONE slot after a day idle; no 288-slot catch-up. This request has true 0% cache hit.",
+        "now_ms": 1700186400100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 4,
+          "anchor_ms": 1700186400000,
+          "anchor_bucket": 5667288,
+          "percentage": "61.3%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0",
+            "4",
+            "7",
+            "0"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666989,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5666997,
+              "read": 900,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667000,
+              "read": 1000,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667288,
+              "read": 0,
+              "write": 990,
+              "uncached": 10,
+              "quality": "exact"
+            }
+          ],
+          "read": 1900,
+          "write": 990,
+          "uncached": 210,
+          "revision": 4,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "Same bucket new request",
+        "description": "Token-weighted total changes without shifting a single cell.",
+        "now_ms": 1700186400102,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 4,
+          "anchor_ms": 1700186400001,
+          "anchor_bucket": 5667288,
+          "percentage": "83.2%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0",
+            "4",
+            "7",
+            "0"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666989,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5666997,
+              "read": 900,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667000,
+              "read": 1000,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667288,
+              "read": 9000,
+              "write": 990,
+              "uncached": 1010,
+              "quality": "exact"
+            }
+          ],
+          "read": 10900,
+          "write": 990,
+          "uncached": 1210,
+          "revision": 5,
+          "quality": "exact"
+        }
+      }
+    ],
+    "boundaries": [
+      {
+        "label": "Before boundary",
+        "description": "A request at 1 millisecond before the clock boundary belongs to the old bucket.",
+        "now_ms": 1700100000100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 1,
+          "anchor_ms": 1700099999999,
+          "anchor_bucket": 5666999,
+          "percentage": "0%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666999,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            }
+          ],
+          "read": 0,
+          "write": 0,
+          "uncached": 100,
+          "revision": 1,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "Exactly on boundary",
+        "description": "A genuine new request belongs to the new bucket; shift by one, not a rounded-up interval.",
+        "now_ms": 1700100000100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 2,
+          "anchor_ms": 1700100000000,
+          "anchor_bucket": 5667000,
+          "percentage": "50%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0",
+            "7"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666999,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667000,
+              "read": 100,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            }
+          ],
+          "read": 100,
+          "write": 0,
+          "uncached": 100,
+          "revision": 2,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "After boundary",
+        "description": "Another request in the same bucket changes weighted usage, not the position.",
+        "now_ms": 1700100000100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 2,
+          "anchor_ms": 1700100000001,
+          "anchor_bucket": 5667000,
+          "percentage": "65%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0",
+            "7"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666999,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667000,
+              "read": 195,
+              "write": 0,
+              "uncached": 5,
+              "quality": "exact"
+            }
+          ],
+          "read": 195,
+          "write": 0,
+          "uncached": 105,
+          "revision": 3,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "80\u2013100% ramp",
+        "description": "Twelve request buckets demonstrate all eight original height/color steps.",
+        "now_ms": 1700103600100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 12,
+          "anchor_ms": 1700103600000,
+          "anchor_bucket": 5667012,
+          "percentage": "83.3%",
+          "codes": [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "7",
+            "0",
+            "4",
+            "7"
+          ],
+          "buckets": [
+            {
+              "bucket": 5667001,
+              "read": 8000,
+              "write": 0,
+              "uncached": 2000,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667002,
+              "read": 8250,
+              "write": 0,
+              "uncached": 1750,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667003,
+              "read": 8500,
+              "write": 0,
+              "uncached": 1500,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667004,
+              "read": 8750,
+              "write": 0,
+              "uncached": 1250,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667005,
+              "read": 9000,
+              "write": 0,
+              "uncached": 1000,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667006,
+              "read": 9250,
+              "write": 0,
+              "uncached": 750,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667007,
+              "read": 9500,
+              "write": 0,
+              "uncached": 500,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667008,
+              "read": 9750,
+              "write": 0,
+              "uncached": 250,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667009,
+              "read": 10000,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667010,
+              "read": 0,
+              "write": 0,
+              "uncached": 10000,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667011,
+              "read": 9000,
+              "write": 0,
+              "uncached": 1000,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667012,
+              "read": 10000,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            }
+          ],
+          "read": 100000,
+          "write": 0,
+          "uncached": 20000,
+          "revision": 15,
+          "quality": "exact"
+        }
+      }
+    ],
+    "sessions": [
+      {
+        "label": "Session A, cold small call",
+        "description": "A small request contributes 100 fresh tokens.",
+        "now_ms": 1700100000100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 1,
+          "anchor_ms": 1700100000000,
+          "anchor_bucket": 5667000,
+          "percentage": "0%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "0"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5667000,
+              "read": 0,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            }
+          ],
+          "read": 0,
+          "write": 0,
+          "uncached": 100,
+          "revision": 1,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "Session B, same second",
+        "description": "A large call with a separate session contributes 9,900 cached and 100 fresh tokens.",
+        "now_ms": 1700100000100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 1,
+          "anchor_ms": 1700100000000,
+          "anchor_bucket": 5667000,
+          "percentage": "98%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "7"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5667000,
+              "read": 9900,
+              "write": 0,
+              "uncached": 200,
+              "quality": "exact"
+            }
+          ],
+          "read": 9900,
+          "write": 0,
+          "uncached": 200,
+          "revision": 2,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "Interleaved duplicate A/B",
+        "description": "Shared token weighting is about 98%, not a 50% average of requests. Duplicates do not accumulate.",
+        "now_ms": 1700100300100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 1,
+          "anchor_ms": 1700100000000,
+          "anchor_bucket": 5667000,
+          "percentage": "98%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "7"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5667000,
+              "read": 9900,
+              "write": 0,
+              "uncached": 200,
+              "quality": "exact"
+            }
+          ],
+          "read": 9900,
+          "write": 0,
+          "uncached": 200,
+          "revision": 2,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "Next bucket session A",
+        "description": "A new request advances all shared history once across the clock boundary.",
+        "now_ms": 1700100300100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 2,
+          "anchor_ms": 1700100300000,
+          "anchor_bucket": 5667001,
+          "percentage": "97.3%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "7",
+            "4"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5667000,
+              "read": 9900,
+              "write": 0,
+              "uncached": 200,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667001,
+              "read": 900,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            }
+          ],
+          "read": 10800,
+          "write": 0,
+          "uncached": 300,
+          "revision": 3,
+          "quality": "exact"
+        }
+      },
+      {
+        "label": "Late old request session C",
+        "description": "Older evidence changes a past cell but cannot rewind the shared anchor.",
+        "now_ms": 1700100600100,
+        "view": {
+          "axis": "active-five-minute/v1",
+          "active_bucket_count": 3,
+          "anchor_ms": 1700100300000,
+          "anchor_bucket": 5667001,
+          "percentage": "97.3%",
+          "codes": [
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "7",
+            "7",
+            "4"
+          ],
+          "buckets": [
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": null,
+              "read": 0,
+              "write": 0,
+              "uncached": 0,
+              "quality": "padding"
+            },
+            {
+              "bucket": 5666998,
+              "read": 100,
+              "write": 0,
+              "uncached": 0,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667000,
+              "read": 9900,
+              "write": 0,
+              "uncached": 200,
+              "quality": "exact"
+            },
+            {
+              "bucket": 5667001,
+              "read": 900,
+              "write": 0,
+              "uncached": 100,
+              "quality": "exact"
+            }
+          ],
+          "read": 10900,
+          "write": 0,
+          "uncached": 300,
+          "revision": 4,
+          "quality": "exact"
+        }
+      }
+    ]
+  }
+}

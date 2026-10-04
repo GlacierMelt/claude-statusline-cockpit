@@ -1,0 +1,29 @@
+# Runtime/test bytecode and disposable test files
+__pycache__/
+*.py[cod]
+.history-test-*
+
+# Local-only verification: host screenshots, audit reports and machine paths
+/verification/
+
+# Never publish live usage, conversations, installed config/pins or backups
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.view.json
+*.view.json.lock
+*.jsonl
+.python-path
+settings.json
+settings.json.*
+.env
+.env.*
+.claude/
+_backups/
+backups/
+*.bak
+*.bak-*
+.DS_Store

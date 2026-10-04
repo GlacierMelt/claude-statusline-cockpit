@@ -1,0 +1,17 @@
+{
+  "schema": "cockpit-events/v1",
+  "kind": "request",
+  "source": "example-producer-not-claude-payload",
+  "source_version": "1",
+  "project_id": "example-project",
+  "session_id": "example-session",
+  "conversation_scope": "main",
+  "event_id": "real-request-id-from-your-producer",
+  "event_time": "2026-10-03T06:00:00.000-04:00",
+  "source_sequence": 1,
+  "usage": {
+    "cache_read_input_tokens": 900,
+    "cache_creation_input_tokens": 90,
+    "input_tokens": 10
+  }
+}
