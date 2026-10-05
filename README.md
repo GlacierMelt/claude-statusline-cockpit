@@ -4,8 +4,30 @@
 
 > 本文描述当前仓库代码，不把历史修复报告当作现行行为。界面保持原项目视觉约定；缓存统计是完成请求的输入 token 比例，不是“状态栏刷新次数命中率”，也不是缓存 TTL 倒计时。
 
+## 快速安装
+
+需要 Python 3.9+、Bash、`awk` 和 `git`，macOS 默认自带的就够，不需要 `jq` 或任何第三方 Python 包。
+
+```sh
+git clone https://github.com/GlacierMelt/claude-statusline-cockpit.git
+cd claude-statusline-cockpit
+bash install.sh
+```
+
+然后**新开一个 Claude Code 会话**。settings 只在启动时读取，当前会话不会生效。如果状态栏是空的，先接受该目录的 workspace trust 对话框。
+
+安装器把运行包复制到 `~/.claude/statusline-cockpit/`，只改 `~/.claude/settings.json` 里的 `statusLine`，其他设置不动。改之前会给旧运行包和 settings 各留一份带时间戳的备份。
+
+- **装到别的配置目录**：`CLAUDE_CONFIG_DIR=~/my-claude bash install.sh`
+- **指定 Python**（比如 PATH 里的 `python3` 是 Conda 环境）：`CACHE_HISTORY_PYTHON=/usr/bin/python3 bash install.sh`
+- **升级**：在仓库目录里 `git pull && bash install.sh`
+- **卸载**：在 Claude Code 里运行 `/statusline delete`，或者手动删掉 settings 里的 `statusLine` 键，再删除 `~/.claude/statusline-cockpit/`。缓存账本在 `~/.local/state/claude-statusline-cockpit/`，不需要的话可以一起删掉。
+
+安装原理、回退方法和全部配置项见后文「安装、升级与安全回退」和「配置项」。
+
 ## 目录
 
+- 快速安装
 - 三行分别表示什么
 - 架构与运行数据流
 - 逐项功能实现原理
@@ -247,7 +269,7 @@ counter 还需要 `counter_epoch` 与完成 `request_count`。基线按 source/p
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
-# 只有明确要更新当前 Claude 配置时才运行；本次文档整理没有运行它
+# 测试通过后再安装；这一步会改写当前 Claude 配置
 CACHE_HISTORY_PYTHON="$(command -v python3)" bash ./install.sh
 ```
 
