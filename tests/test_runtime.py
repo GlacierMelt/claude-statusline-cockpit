@@ -66,7 +66,9 @@ class RuntimeCase(unittest.TestCase):
 
     def assert_history(self, rows):
         self.assertTrue(rows[1].startswith("▲ hit 95.0%  "), rows)
-        self.assertEqual(len(rows[1].split("  ", 1)[1]), 12)
+        bar, badge = rows[1].split("  ", 1)[1].split("  |  💭 ", 1)
+        self.assertEqual(len(bar), 12)
+        self.assertEqual(badge, "0")
 
     def copy_bundle(self):
         bundle = self.path / "manual bundle"

@@ -113,17 +113,18 @@ class IntegrationCase(unittest.TestCase):
         output = self.render()
         row = output.splitlines()[1]
         expected = "▲ hit 100.0%  " + "▁" * 10 + "██"
-        self.assertEqual(SGR.sub("", row), expected)
+        self.assertEqual(SGR.sub("", row), expected + "  |  💭 0")
         self.assertEqual(row.count("\x1b[38;2;245;201;181m▁"), 10)
         self.assertNotIn("·", row)
         indexed = self.render(COLORTERM="", TERM_PROGRAM="", TERM="xterm-256color").splitlines()[1]
-        self.assertEqual(SGR.sub("", indexed), expected)
+        self.assertEqual(SGR.sub("", indexed), expected + "  |  💭 0")
         self.assertEqual(indexed.count("\x1b[38;5;223m▁"), 10)
         self.assertNotIn("38;2", indexed)
         for width in (10, 12, 20, 80):
             lines = SGR.sub("", self.render(COLUMNS=str(width))).splitlines()[1:]
             # At narrow widths, line breaks replace the two-column separator.
-            self.assertEqual("".join(lines).replace(" ", ""), expected.replace(" ", ""))
+            suffix = "  |  💭 0" if width == 80 else ""
+            self.assertEqual("".join(lines).replace(" ", ""), (expected + suffix).replace(" ", ""))
             self.assertTrue(all(len(line) <= width-4 for line in lines))
             self.assertEqual(len(re.findall("[▁▂▃▄▅▆▇█]", "".join(lines))), 12)
         self.assertEqual(row, self.render(CACHE_HISTORY_NOW=str(BASE/1000+86400)).splitlines()[1])
@@ -139,7 +140,7 @@ class IntegrationCase(unittest.TestCase):
         self.append(event("zero", BASE-11*300000, read=0, write=100, uncached=0),
                     event("latest", read=100, uncached=0))
         row = self.render().splitlines()[1]
-        self.assertEqual(SGR.sub("", row), "▲ hit 50.0%  " + "▁" * 11 + "█")
+        self.assertEqual(SGR.sub("", row), "▲ hit 50.0%  " + "▁" * 11 + "█  |  💭 0")
         self.assertEqual(row.count("\x1b[38;2;245;201;181m▁"), 11)
         h = History(self.path / "history.sqlite3")
         try:
@@ -189,19 +190,20 @@ class IntegrationCase(unittest.TestCase):
                 raise sqlite3.OperationalError("injected commit failure")
         with patch("cache_history.History",FailCommit):
             actual=bridge(self.payload,self.env)
-        self.assertEqual(actual[-2:],old[-2:])
+        self.assertEqual(actual[8:10],old[8:10])
+        self.assertEqual(actual[8:],old[8:])
         h=History(self.path/"history.sqlite3")
         self.assertEqual(h.db.execute("SELECT COUNT(*) FROM events").fetchone()[0],1)
         h.close()
-        self.assertNotEqual(bridge(self.payload,self.env)[-2:],old[-2:])
+        self.assertNotEqual(bridge(self.payload,self.env)[8:10],old[8:10])
 
     def test_corrupt_sidecar_does_not_break_committed_sqlite_readback(self):
         self.append(event("a"))
-        expected=bridge(self.payload,self.env)[-2:]
+        expected=bridge(self.payload,self.env)[8:]
         sidecar=Path(str(self.path/"history.sqlite3")+".view.json")
         for wrong in ([],{"{}":{"codes":["?"]*12}}, {"{}":{"codes":[{}]*12,"percentage":123,"revision":"wrong"}}):
             sidecar.write_text(json.dumps(wrong))
-            self.assertEqual(bridge(self.payload,self.env)[-2:],expected)
+            self.assertEqual(bridge(self.payload,self.env)[8:],expected)
 
     def test_narrow_cache_rows_fit_host_reserved_width(self):
         self.append(event("a"))
@@ -234,7 +236,8 @@ class IntegrationCase(unittest.TestCase):
         for proc in processes:
             out, err = proc.communicate("{}", timeout=20)
             self.assertEqual(proc.returncode, 0);self.assertEqual(err, "")
-            outputs.append(out.splitlines()[-2:])
+            self.assertEqual(len(out.splitlines()), 11)
+            outputs.append(out.splitlines()[8:])
         self.assertEqual(outputs, [outputs[0]] * len(outputs))
         h = History(self.path / "history.sqlite3")
         try:
@@ -294,16 +297,16 @@ with h.transaction():
         self.assertEqual(before,self.render(CACHE_HISTORY_NOW=str(BASE/1000+86400)).splitlines()[1])
         self.append(event("b",BASE+86400000,read=100,uncached=0))
         after=SGR.sub("",self.render(CACHE_HISTORY_NOW=str(BASE/1000+86401))).splitlines()[1]
-        self.assertEqual(after,"▲ hit 95.0%  " + "▁" * 10 + "▅█")
+        self.assertEqual(after,"▲ hit 95.0%  " + "▁" * 10 + "▅█  |  💭 0")
 
 
     def test_five_clock_bucket_gap_shifts_only_one_visible_cell(self):
         self.append(event("before-gap", read=100, uncached=0))
-        before = SGR.sub("", self.render()).splitlines()[1].split("  ", 1)[1]
+        before = "".join(re.findall(r"[▁▂▃▄▅▆▇█]", SGR.sub("", self.render()).splitlines()[1]))
         self.append(event("after-gap", BASE+5*300000, read=0, write=100, uncached=0))
         plain = SGR.sub("", self.render(CACHE_HISTORY_NOW=str(BASE/1000+5*300+100))).splitlines()[1]
-        self.assertEqual(plain, "▲ hit 50.0%  " + before[1:] + "▁")
-        self.assertEqual(plain, "▲ hit 50.0%  " + "▁"*10 + "█▁")
+        self.assertEqual(plain, "▲ hit 50.0%  " + before[1:] + "▁  |  💭 100")
+        self.assertEqual(plain, "▲ hit 50.0%  " + "▁"*10 + "█▁  |  💭 100")
         frozen = self.render().splitlines()[1]
         self.assertEqual(frozen, self.render(CACHE_HISTORY_NOW=str(BASE/1000+86400)).splitlines()[1])
 
@@ -313,10 +316,10 @@ with h.transaction():
         sidecar=Path(str(self.path/"history.sqlite3")+".view.json")
         views=json.loads(sidecar.read_text());views["{}"].pop("axis")
         sidecar.write_text(json.dumps(views))
-        self.assertEqual(saved_history_fields(self.env), ["?%", "?"*12])
+        self.assertEqual(saved_history_fields(self.env), ["?%", "?"*12, "-1"])
         # A successful helper rebuilds/publishes the current policy from events.
-        self.assertEqual(bridge(self.payload,self.env)[-2:], ["90%", "-"*11+"4"])
-        self.assertEqual(saved_history_fields(self.env), ["90%", "-"*11+"4"])
+        self.assertEqual(bridge(self.payload,self.env)[8:10], ["90%", "-"*11+"4"])
+        self.assertEqual(saved_history_fields(self.env), ["90%", "-"*11+"4", "0"])
 
 
 class InstallerFixtureCase(unittest.TestCase):

@@ -133,7 +133,8 @@ class OriginalUICase(unittest.TestCase):
             self.assertEqual(SGR.sub("", cache), "▲ hit 0.0%  "+"▁"*12)
             self.assertEqual(cache.count(PALETTE[name]["blank"]+"▁"), 12)
         raw = bridge(self.payload, self.env)
-        self.assertEqual(raw[-2:], ["?%", "?"*12])
+        self.assertEqual(raw[8:10], ["?%", "?"*12])
+        self.assertEqual(raw[-1], "-1")
         h=History(self.path/"history.sqlite3")
         try:
             with h.transaction():
@@ -148,14 +149,14 @@ class OriginalUICase(unittest.TestCase):
         second = event("second", BASE+1, read=920, uncached=0)
         third = event("third", BASE+2, read=0, uncached=2000)
         self.write(first)
-        before = SGR.sub("", self.render()).split("  ",1)[1]
-        raw_before = bridge(self.payload,self.env)[-2:]
+        before = "".join(re.findall(r"[▁▂▃▄▅▆▇█]", SGR.sub("", self.render())))
+        raw_before = bridge(self.payload,self.env)[8:10]
         self.write(first,second)
-        middle = SGR.sub("", self.render()).split("  ",1)[1]
-        raw_middle = bridge(self.payload,self.env)[-2:]
+        middle = "".join(re.findall(r"[▁▂▃▄▅▆▇█]", SGR.sub("", self.render())))
+        raw_middle = bridge(self.payload,self.env)[8:10]
         self.write(first,second,third)
-        after = SGR.sub("", self.render()).split("  ",1)[1]
-        raw_after = bridge(self.payload,self.env)[-2:]
+        after = "".join(re.findall(r"[▁▂▃▄▅▆▇█]", SGR.sub("", self.render())))
+        raw_after = bridge(self.payload,self.env)[8:10]
         self.assertEqual((before[-1],middle[-1],after[-1]), ("▁","█","▁"))
         self.assertEqual(before[:-1],middle[:-1])
         self.assertEqual(before[:-1],after[:-1])
@@ -170,8 +171,8 @@ class OriginalUICase(unittest.TestCase):
         self.write(event("known", read=100, uncached=0),
                    event("real-zero", BASE+300000, read=0, write=0, uncached=0))
         cache = self.render()
-        self.assertEqual(SGR.sub("", cache), "▲ hit 100.0%  "+"▁"*10+"█▁")
-        self.assertEqual(bridge(self.payload,self.env)[-2:], ["~100%", "-"*10+"7?"])
+        self.assertEqual(SGR.sub("", cache), "▲ hit 100.0%  "+"▁"*10+"█▁  |  💭 0")
+        self.assertEqual(bridge(self.payload,self.env)[8:10], ["~100%", "-"*10+"7?"])
         h=History(self.path/"history.sqlite3")
         try:
             with h.transaction():

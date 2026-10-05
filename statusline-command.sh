@@ -17,7 +17,7 @@ input=$(cat)
 RESET=$'\033[0m'
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 model=""; effort=""; used=""; size=""; pct_label="?"; pct_bar=""
-cost_raw=""; dir=""; cache_pct="?%"; cache_codes="????????????"
+cost_raw=""; dir=""; cache_pct="?%"; cache_codes="????????????"; cache_write=-1
 # Pin the interpreter validated by install.sh. The user's interactive shell
 # can resolve a different python3 than the installation shell (e.g. Conda).
 python_bin="${CACHE_HISTORY_PYTHON:-}"
@@ -49,7 +49,7 @@ if command -v "$python_bin" >/dev/null 2>&1; then
       IFS= read -r used; IFS= read -r size
       IFS= read -r pct_label; IFS= read -r pct_bar
       IFS= read -r cost_raw; IFS= read -r dir
-      IFS= read -r cache_pct; IFS= read -r cache_codes
+      IFS= read -r cache_pct; IFS= read -r cache_codes; IFS= read -r cache_write
     } <<< "$fields"
   fi
 fi
@@ -57,6 +57,7 @@ case "$cache_codes" in
   *[!0-7?-]*) cache_codes="????????????"; cache_pct="?%" ;;
 esac
 [ "${#cache_codes}" -eq 12 ] || { cache_codes="????????????"; cache_pct="?%"; }
+case "$cache_write" in ''|*[!0-9]*) cache_write=-1 ;; esac
 
 # Preserve the installed original's display contract. Internal quality and
 # unknown codes stay in the saved diagnostics, not as new UI symbols. With no
@@ -135,6 +136,9 @@ if [ "$TC" = 1 ]; then
              $'\033[1;38;2;255;57;58m') # #FF393A third digit
   HIT_DOT_C=$'\033[1;38;2;192;197;201m' # #C0C5C9 decimal point
   HIT_PCT_C=$'\033[1;38;2;187;213;218m' # #BBD5DA percent sign
+  WRITE_NUM_C=$'\033[1;38;2;35;136;168m' # #2388A8 — badge number, bold
+  WRITE_UNIT_C=$'\033[1;38;2;230;173;53m' # #E6AD35 — badge M, bold
+  WRITE_K_C=$'\033[1;38;2;247;214;79m'   # #F7D64F — badge k, bold
 else
   BADGE_BG=$'\033[48;5;236m'
   BADGE_FG=$'\033[1;38;5;231m'
@@ -173,6 +177,9 @@ else
   HIT_LABEL_C=$'\033[38;5;248m'        # original project's 256-color 'hit' label
   HIT_NUM_C=$'\033[1;38;5;196m'        # nearest 256 to #FF0000, bold
   HIT_ROLE=0                           # flat here: the pale tones have no close 256 entry
+  WRITE_NUM_C=$'\033[1;38;5;31m'       # nearest 256 to #2388A8, bold
+  WRITE_UNIT_C=$'\033[1;38;5;178m'     # nearest 256 to #E6AD35, bold
+  WRITE_K_C=$'\033[1;38;5;221m'       # nearest 256 to #F7D64F, bold
 fi
 
 FILLED_CHAR='■'
@@ -188,6 +195,22 @@ humanise() {
     print s
   }'
 }
+
+write_badge=""; write_text=""; write_number=""; write_unit=""
+if [ "$cache_write" != -1 ]; then
+  write_text=$(humanise "$cache_write")
+  case "$write_text" in
+    *k) write_number=${write_text%k}; write_unit=k ;;
+    *M) write_number=${write_text%M}; write_unit=M ;;
+    *)  write_number=$write_text ;;
+  esac
+  write_badge="💭 ${WRITE_NUM_C}${write_number}${RESET}"
+  if [ -n "$write_unit" ]; then
+    write_unit_color=$WRITE_UNIT_C
+    [ "$write_unit" = k ] && write_unit_color=$WRITE_K_C
+    write_badge="${write_badge}${write_unit_color}${write_unit}${RESET}"
+  fi
+fi
 
 # --- model badge (drop any "(1M context)" qualifier to stay compact) -------
 model=$(printf '%s' "$model" | sed 's/ *(.*)$//')
@@ -412,6 +435,11 @@ else
 fi
 pfx="${TRI_C}▲${RESET} ${HIT_LABEL_C}hit${RESET} ${pct_out}"
 cache_width=$(( 6 + ${#cache_pct} + 2 + 12 ))
+badge_tail=""; badge_extra=0
+if [ -n "$write_badge" ]; then
+  # Two spaces, pipe, two spaces, two-cell emoji, space, and the ASCII value.
+  badge_extra=$(( 8 + ${#write_text} ))
+fi
 if [ "$content_cols" -lt "$cache_width" ]; then
   # Prefix glyphs are atomic as well, even with a C locale (▲ is multibyte).
   # Continuations keep every label/percentage character instead of truncating.
@@ -426,9 +454,15 @@ if [ "$content_cols" -lt "$cache_width" ]; then
     fi
     pfx_wrap="${pfx_wrap}${prefix_cells[$i]}"; prefix_col=$(( prefix_col + 1 ))
   done
-  out2="${pfx_wrap}"$'\n'"${cache_bar}"
+  if [ -n "$write_badge" ] && [ "$(( bar_col + badge_extra ))" -le "$content_cols" ]; then
+    badge_tail="  ${COST_C}|${RESET}  ${write_badge}"
+  fi
+  out2="${pfx_wrap}"$'\n'"${cache_bar}${badge_tail}"
 else
-  out2="${pfx}  ${cache_bar}"
+  if [ -n "$write_badge" ] && [ "$(( cache_width + badge_extra ))" -le "$content_cols" ]; then
+    badge_tail="  ${COST_C}|${RESET}  ${write_badge}"
+  fi
+  out2="${pfx}  ${cache_bar}${badge_tail}"
 fi
 
 # ===========================================================================

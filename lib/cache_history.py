@@ -22,7 +22,7 @@ import time
 
 from cache_sources import (Excluded, Issue, Record, TOKEN_KEYS, integer, parse_feed,
                            parse_transcript, token_usage, transcript_exclusion_reason)
-from statusline_input import VIEW_AXIS, context_fields, input_fields, valid_view
+from statusline_input import VIEW_AXIS, context_fields, history_fields, input_fields, valid_view
 
 BUCKET_MS = 300_000
 BUCKETS = 12
@@ -588,7 +588,7 @@ def bridge(payload, env=os.environ):
     finally:
         if history:
             history.close()
-    return input_fields(payload) + [view["percentage"], "".join(view["codes"])]
+    return input_fields(payload) + history_fields(view)
 
 
 def main():

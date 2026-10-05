@@ -80,6 +80,29 @@ def valid_view(view):
             and _integer(view.get("revision")))
 
 
+def latest_bucket_write(view):
+    """Exact W for the rightmost active bucket, or -1 when it is unknown."""
+    if not isinstance(view, dict):
+        return -1
+    buckets = view.get("buckets")
+    if not isinstance(buckets, list) or not buckets:
+        return -1
+    last = buckets[-1]
+    if not isinstance(last, dict) or last.get("quality") != "exact":
+        return -1
+    bucket_id = last.get("bucket")
+    if type(bucket_id) is not int or bucket_id < 0:
+        return -1
+    write = last.get("write")
+    return write if type(write) is int and write >= 0 else -1
+
+
+def history_fields(view):
+    if not valid_view(view):
+        return ["?%", "?" * 12, "-1"]
+    return [view["percentage"], "".join(view["codes"]), str(latest_bucket_write(view))]
+
+
 def saved_history_fields(env=os.environ):
     """Read the last committed projection only; never ingest or advance time."""
     scope = {key: env[name] for key, name in (
@@ -92,10 +115,10 @@ def saved_history_fields(env=os.environ):
         key = json.dumps(scope, sort_keys=True, separators=(",", ":"))
         view = views.get(key) if isinstance(views, dict) else None
         if valid_view(view):
-            return [view["percentage"], "".join(view["codes"])]
+            return history_fields(view)
     except (OSError, ValueError):
         pass
-    return ["?%", "?" * 12]
+    return ["?%", "?" * 12, "-1"]
 
 
 def main():
