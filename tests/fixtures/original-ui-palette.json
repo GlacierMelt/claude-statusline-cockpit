@@ -1,7 +1,7 @@
 {
   "baseline": "hit label: original project 0983e03 / 06:26 backup; other retained roles: pre-repair installed script",
   "truecolor": {
-    "TRI_C": "\u001b[38;2;132;165;152m",
+    "TRI_C": "\u001b[38;2;235;223;51m",
     "HIT_LABEL_C": "\u001b[38;2;44;104;123m",
     "HIT_NUM_C": "\u001b[1;38;2;255;0;0m",
     "digits": [
@@ -14,7 +14,7 @@
     "blank": "\u001b[38;2;245;201;181m"
   },
   "indexed": {
-    "TRI_C": "\u001b[38;5;108m",
+    "TRI_C": "\u001b[38;5;220m",
     "HIT_LABEL_C": "\u001b[38;5;248m",
     "HIT_NUM_C": "\u001b[1;38;5;196m",
     "blank": "\u001b[38;5;223m"
