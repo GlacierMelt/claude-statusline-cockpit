@@ -379,12 +379,12 @@ class WriteBadgeCase(unittest.TestCase):
 
     def test_requested_number_gradient_and_units_keep_other_UI_unchanged(self):
         fallback = self.fallback_script()
-        colors = (("truecolor", ["\x1b[1;38;2;35;136;168m", "\x1b[1;38;2;45;140;164m",
-                               "\x1b[1;38;2;54;143;160m", "\x1b[1;38;2;64;147;156m",
-                               "\x1b[1;38;2;74;150;152m"], "\x1b[1;38;2;239;211;82m",
+        colors = (("truecolor", ["\x1b[1;38;2;43;139;165m", "\x1b[1;38;2;51;142;161m",
+                               "\x1b[1;38;2;59;145;158m", "\x1b[1;38;2;68;148;154m",
+                               "\x1b[1;38;2;76;151;151m"], "\x1b[1;38;2;239;211;82m",
                    "\x1b[1;38;2;230;173;53m"),
-                  ("indexed", ["\x1b[1;38;5;31m", "\x1b[1;38;5;31m", "\x1b[1;38;5;67m",
-                              "\x1b[1;38;5;67m", "\x1b[1;38;5;66m"],
+                  ("indexed", ["\x1b[1;38;5;31m", "\x1b[1;38;5;67m", "\x1b[1;38;5;67m",
+                              "\x1b[1;38;5;66m", "\x1b[1;38;5;66m"],
                    "\x1b[1;38;5;221m", "\x1b[1;38;5;178m"))
         for mode, number_colors, k_color, m_color in colors:
             color = {"COLORTERM": "truecolor" if mode == "truecolor" else "",
@@ -408,8 +408,8 @@ class WriteBadgeCase(unittest.TestCase):
 
     def test_gradient_uses_all_five_reference_stops_and_clamps_long_numbers(self):
         fallback = self.fallback_script()
-        reference = [(35, 136, 168), (45, 140, 164), (54, 143, 160),
-                     (64, 147, 156), (74, 150, 152)]
+        reference = [(43, 139, 165), (51, 142, 161), (59, 145, 158),
+                     (68, 148, 154), (76, 151, 151)]
         for write, number in ((0, "0"), (42, "42"), (999, "999"), (15900, "15.9"),
                               (123456789, "123.5"), (1234567890, "1234.6"),
                               (9007199254740991, "9007199254.7")):

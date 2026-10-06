@@ -137,11 +137,11 @@ if [ "$TC" = 1 ]; then
   HIT_DOT_C=$'\033[1;38;2;192;197;201m' # #C0C5C9 decimal point
   HIT_PCT_C=$'\033[1;38;2;187;213;218m' # #BBD5DA percent sign
   # Badge number: one reference stop per character, decimal point included.
-  WRITE_NUM_C=($'\033[1;38;2;35;136;168m' # #2388A8 — first character, bold
-               $'\033[1;38;2;45;140;164m' # #2D8CA4
-               $'\033[1;38;2;54;143;160m' # #368FA0
-               $'\033[1;38;2;64;147;156m' # #40939C
-               $'\033[1;38;2;74;150;152m') # #4A9698 — fifth and later
+  WRITE_NUM_C=($'\033[1;38;2;43;139;165m' # #2B8BA5 — first character, bold
+               $'\033[1;38;2;51;142;161m' # #338EA1
+               $'\033[1;38;2;59;145;158m' # #3B919E
+               $'\033[1;38;2;68;148;154m' # #44949A
+               $'\033[1;38;2;76;151;151m') # #4C9797 — fifth and later
   WRITE_UNIT_C=$'\033[1;38;2;230;173;53m' # #E6AD35 — badge M, bold
   WRITE_K_C=$'\033[1;38;2;239;211;82m'   # #EFD352 — badge k, bold
 else
@@ -183,11 +183,11 @@ else
   HIT_NUM_C=$'\033[1;38;5;196m'        # nearest 256 to #FF0000, bold
   HIT_ROLE=0                           # flat here: the pale tones have no close 256 entry
   # Nearest 256 entries; repeated stops reflect the limited colour cube.
-  WRITE_NUM_C=($'\033[1;38;5;31m'      # #2388A8, bold
-               $'\033[1;38;5;31m'      # #2D8CA4
-               $'\033[1;38;5;67m'      # #368FA0
-               $'\033[1;38;5;67m'      # #40939C
-               $'\033[1;38;5;66m')     # #4A9698
+  WRITE_NUM_C=($'\033[1;38;5;31m'      # #2B8BA5, bold
+               $'\033[1;38;5;67m'      # #338EA1
+               $'\033[1;38;5;67m'      # #3B919E
+               $'\033[1;38;5;66m'      # #44949A
+               $'\033[1;38;5;66m')     # #4C9797
   WRITE_UNIT_C=$'\033[1;38;5;178m'     # nearest 256 to #E6AD35, bold
   WRITE_K_C=$'\033[1;38;5;221m'       # nearest 256 to #EFD352, bold
 fi
