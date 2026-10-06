@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>状态栏数值渐变 · HTML 预览</title>
+<style>
+:root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#dce3ec;background:#101319;font-synthesis:none;--mono:"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box}body{margin:0;padding:32px 24px 28px}main{max-width:960px;margin:0 auto}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:24px}.eyebrow{margin:0 0 8px;color:#8490a2;font-size:11px;letter-spacing:.12em}h1{margin:0;font-size:30px;font-weight:600;letter-spacing:-.035em}.subtitle{margin:10px 0 0;color:#99a5b6;font-size:14px;line-height:1.6}.tag{flex-shrink:0;padding:7px 10px;border:1px solid #303743;border-radius:6px;color:#8997a9;font-size:11px;margin-top:4px}
+.controls{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}.samples,.modes{display:flex;gap:6px;flex-wrap:wrap}button{font-family:var(--mono);font-size:12px;padding:8px 11px;color:#a3afbf;background:#161b23;border:1px solid #303846;border-radius:6px;cursor:pointer}button:hover{color:#e5edf7;border-color:#536071}button[aria-pressed="true"]{background:#16303b;border-color:#2388a8;color:#e7f5f8}button:focus-visible{outline:2px solid #4a9698;outline-offset:3px}.modes button{font-family:inherit;font-size:11px}
+.terminal{background:#0b0f15;border:1px solid #2b323e;border-radius:10px;overflow:hidden}.terminal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 18px;border-bottom:1px solid #242c37;color:#7e8c9e;font-size:11px}.terminal-label{display:flex;align-items:center;gap:9px}.lights{display:flex;gap:5px}.lights i{width:7px;height:7px;display:block;border-radius:50%;background:#505b6c}.lights i:nth-child(2){background:#666957}.lights i:nth-child(3){background:#4c655e}.terminal-body{padding:18px 20px;overflow-x:auto}pre{margin:0;font-family:var(--mono);font-weight:400;font-size:clamp(11px,1.3vw,15px);line-height:1.85;white-space:pre;color:#d4dbe6;tab-size:4;font-variant-ligatures:none}
+.focus{display:flex;justify-content:space-between;align-items:center;gap:22px;padding:24px 0 22px}.section-label{font-size:11px;color:#8492a4;letter-spacing:.04em;margin:0 0 12px}.zoom{font-family:var(--mono);font-size:54px;line-height:1.2;white-space:pre;font-weight:400;color:#d4dbe6;font-variant-ligatures:none}.write-digit,.write-unit{font-weight:700}.focus-notes{max-width:260px;color:#98a5b6;font-size:12px;line-height:1.8}.focus-notes p{margin:0}.focus-notes strong{font-weight:500;color:#c6d1df}.focus-notes code{font-family:var(--mono)}
+.palette{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.swatch{padding:13px 14px 12px;border:1px solid #303744;border-radius:7px;background:#151a22}.swatch .strip{height:5px;margin-bottom:10px;border-radius:2px;background:var(--color)}.swatch code{color:#d2dce7;font:12px var(--mono)}.swatch small{display:block;color:#79879b;font-size:10px;margin-top:6px}.palette-note{margin:12px 0 22px;color:#7f8ea2;font-size:12px;line-height:1.7}.rule{display:flex;flex-wrap:wrap;gap:8px 24px;padding:15px 0;border-top:1px solid #2b3340;border-bottom:1px solid #2b3340;color:#9eacbd;font-size:12px}.rule code{font-family:var(--mono);font-size:11px}.unit-k{color:#efd352}.unit-m{color:#e6ad35}footer{color:#68788c;font-size:11px;line-height:1.75;margin-top:16px}footer p{margin:0}
+@media(max-width:650px){body{padding:22px 16px}header{gap:10px}h1{font-size:25px}.tag{display:none}.focus{align-items:flex-start;flex-direction:column;gap:16px}.zoom{font-size:42px}.focus-notes{max-width:none}.terminal-body{padding:14px}.palette{grid-template-columns:repeat(3,minmax(0,1fr))}.swatch{padding:10px}.swatch code{font-size:11px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><p class="eyebrow">STATUSLINE / COLOR PREVIEW</p><h1>数值渐变预览</h1><p class="subtitle">逐字符从左到右着色。原有状态栏、单位颜色与间距保持不变。</p></div>
+  <span class="tag">合成数据 · 非实时终端</span>
+</header>
+<section class="controls" aria-label="预览选项">
+  <div class="samples" aria-label="示例数值">
+    <button type="button" data-sample="0" aria-pressed="true">123.5k</button>
+    <button type="button" data-sample="1" aria-pressed="false">15.9k</button>
+    <button type="button" data-sample="2" aria-pressed="false">555k</button>
+    <button type="button" data-sample="3" aria-pressed="false">1.2M</button>
+    <button type="button" data-sample="4" aria-pressed="false">1234.6M</button>
+    <button type="button" data-sample="5" aria-pressed="false">0</button>
+  </div>
+  <div class="modes" aria-label="终端颜色模式">
+    <button type="button" data-mode="truecolor" aria-pressed="true">真彩 · 精确 RGB</button>
+    <button type="button" data-mode="indexed" aria-pressed="false">256 色兼容</button>
+  </div>
+</section>
+<section class="terminal" aria-label="状态栏原始布局">
+  <div class="terminal-head"><span class="terminal-label"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>已部署 renderer · 隔离样本</span><span>80 列 / 保留普通空格</span></div>
+  <div class="terminal-body"><pre id="terminal-output" aria-label="状态栏三行预览"></pre></div>
+</section>
+<section class="focus" aria-label="角标放大效果">
+  <div><p class="section-label">角标放大</p><div id="zoom" class="zoom" aria-label="缓存写入角标"></div></div>
+  <div class="focus-notes"><p><strong>小数点也占一档颜色。</strong></p><p>不足 5 个字符时依次使用前几档；<br>超过 5 个字符时沿用最后一档。</p><p id="mode-note"></p></div>
+</section>
+<section aria-label="从左到右的五档颜色">
+  <p class="section-label">从左到右 / 每个字符对应一档</p>
+  <div id="palette" class="palette"></div>
+  <p class="palette-note">只改变 <code>💭</code> 后的数值；单位不参与渐变。短数值不会重新拉伸颜色范围。</p>
+</section>
+<div class="rule"><span>幅度条后：<strong>3 个普通空格</strong>，无 <code>|</code></span><span>数值和单位：<strong>加粗</strong></span><span><code class="unit-k">k #EFD352</code> / <code class="unit-m">M #E6AD35</code></span></div>
+<footer><p>三行内容由当前已部署脚本在完全隔离的数据路径下生成，再把 ANSI 样式转成 HTML；未读取生产数据库。</p><p>本页仅预览颜色与布局，终端的字体、emoji 和粗体实际形状可能不同。无需联网，可直接打开此 HTML 文件。</p></footer>
+</main>
+<script id="preview-data" type="application/json">[
+  {
+    "write": 123500,
+    "label": "123.5k",
+    "modes": {
+      "truecolor": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(44,48,58)\"> Opus 5.5 <\/span><span style=\"color:rgb(35,61,77)\"> | <\/span><span style=\"color:rgb(254,127,45)\">high<\/span>  <span style=\"color:rgb(93,119,140)\">tok<\/span> <span style=\"font-weight:700;color:rgb(143,184,218)\">94.4k/200k<\/span> <span style=\"color:rgb(143,184,218)\">(<\/span><span style=\"font-weight:700;color:rgb(143,184,218)\">47.2%<\/span><span style=\"color:rgb(143,184,218)\">)<\/span> <span style=\"color:rgb(224,228,235)\">■■■■■<\/span><span style=\"color:rgb(74,85,104)\">······<\/span> <span style=\"color:rgb(224,228,235)\">$<\/span><span style=\"color:rgb(224,231,237)\">0<\/span><span style=\"color:rgb(223,235,238)\">.<\/span><span style=\"color:rgb(223,238,240)\">4<\/span><span style=\"color:rgb(223,241,241)\">2<\/span>\n<span style=\"color:rgb(235,223,51)\">▲<\/span> <span style=\"color:rgb(44,104,123)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">9<\/span><span style=\"font-weight:700;color:rgb(255,27,29)\">5<\/span><span style=\"font-weight:700;color:rgb(192,197,201)\">.<\/span><span style=\"font-weight:700;color:rgb(255,57,58)\">0<\/span><span style=\"font-weight:700;color:rgb(187,213,218)\">%<\/span>  <span style=\"color:rgb(245,201,181)\">▁<\/span><span style=\"color:rgb(225,205,190)\">▂<\/span><span style=\"color:rgb(202,210,200)\">▃<\/span><span style=\"color:rgb(178,213,209)\">▄<\/span><span style=\"color:rgb(172,218,216)\">▅<\/span><span style=\"color:rgb(187,225,223)\">▆<\/span><span style=\"color:rgb(201,231,230)\">▇<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(35,136,168)\">1<\/span><span style=\"font-weight:700;color:rgb(45,140,164)\">2<\/span><span style=\"font-weight:700;color:rgb(54,143,160)\">3<\/span><span style=\"font-weight:700;color:rgb(64,147,156)\">.<\/span><span style=\"font-weight:700;color:rgb(74,150,152)\">5<\/span><span style=\"font-weight:700;color:rgb(239,211,82)\">k<\/span>\n<span style=\"color:rgb(187,213,218)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 123.5k\n~/work/example",
+        "chars": [
+          {
+            "char": "1",
+            "color": "#2388A8"
+          },
+          {
+            "char": "2",
+            "color": "#2D8CA4"
+          },
+          {
+            "char": "3",
+            "color": "#368FA0"
+          },
+          {
+            "char": ".",
+            "color": "#40939C"
+          },
+          {
+            "char": "5",
+            "color": "#4A9698"
+          }
+        ],
+        "unit": "k",
+        "unitColor": "#EFD352"
+      },
+      "indexed": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(48,48,48)\"> Opus 5.5 <\/span><span style=\"color:rgb(58,58,58)\"> | <\/span><span style=\"color:rgb(255,135,0)\">high<\/span>  <span style=\"color:rgb(95,135,135)\">tok<\/span> <span style=\"font-weight:700;color:rgb(135,175,215)\">94.4k/200k<\/span> <span style=\"color:rgb(135,175,215)\">(<\/span><span style=\"font-weight:700;color:rgb(135,175,215)\">47.2%<\/span><span style=\"color:rgb(135,175,215)\">)<\/span> <span style=\"color:rgb(208,208,208)\">■■■■■<\/span><span style=\"color:rgb(88,88,88)\">······<\/span> <span style=\"color:rgb(208,208,208)\">$0.42<\/span>\n<span style=\"color:rgb(255,215,0)\">▲<\/span> <span style=\"color:rgb(168,168,168)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">95.0%<\/span>  <span style=\"color:rgb(255,215,175)\">▁<\/span><span style=\"color:rgb(255,215,175)\">▂<\/span><span style=\"color:rgb(215,215,175)\">▃<\/span><span style=\"color:rgb(175,215,175)\">▄<\/span><span style=\"color:rgb(135,215,175)\">▅<\/span><span style=\"color:rgb(135,215,175)\">▆<\/span><span style=\"color:rgb(175,215,215)\">▇<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(0,135,175)\">1<\/span><span style=\"font-weight:700;color:rgb(0,135,175)\">2<\/span><span style=\"font-weight:700;color:rgb(95,135,175)\">3<\/span><span style=\"font-weight:700;color:rgb(95,135,175)\">.<\/span><span style=\"font-weight:700;color:rgb(95,135,135)\">5<\/span><span style=\"font-weight:700;color:rgb(255,215,95)\">k<\/span>\n<span style=\"color:rgb(175,215,215)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 123.5k\n~/work/example",
+        "chars": [
+          {
+            "char": "1",
+            "color": "#0087AF"
+          },
+          {
+            "char": "2",
+            "color": "#0087AF"
+          },
+          {
+            "char": "3",
+            "color": "#5F87AF"
+          },
+          {
+            "char": ".",
+            "color": "#5F87AF"
+          },
+          {
+            "char": "5",
+            "color": "#5F8787"
+          }
+        ],
+        "unit": "k",
+        "unitColor": "#FFD75F"
+      }
+    }
+  },
+  {
+    "write": 15900,
+    "label": "15.9k",
+    "modes": {
+      "truecolor": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(44,48,58)\"> Opus 5.5 <\/span><span style=\"color:rgb(35,61,77)\"> | <\/span><span style=\"color:rgb(254,127,45)\">high<\/span>  <span style=\"color:rgb(93,119,140)\">tok<\/span> <span style=\"font-weight:700;color:rgb(143,184,218)\">94.4k/200k<\/span> <span style=\"color:rgb(143,184,218)\">(<\/span><span style=\"font-weight:700;color:rgb(143,184,218)\">47.2%<\/span><span style=\"color:rgb(143,184,218)\">)<\/span> <span style=\"color:rgb(224,228,235)\">■■■■■<\/span><span style=\"color:rgb(74,85,104)\">······<\/span> <span style=\"color:rgb(224,228,235)\">$<\/span><span style=\"color:rgb(224,231,237)\">0<\/span><span style=\"color:rgb(223,235,238)\">.<\/span><span style=\"color:rgb(223,238,240)\">4<\/span><span style=\"color:rgb(223,241,241)\">2<\/span>\n<span style=\"color:rgb(235,223,51)\">▲<\/span> <span style=\"color:rgb(44,104,123)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">9<\/span><span style=\"font-weight:700;color:rgb(255,27,29)\">5<\/span><span style=\"font-weight:700;color:rgb(192,197,201)\">.<\/span><span style=\"font-weight:700;color:rgb(255,57,58)\">0<\/span><span style=\"font-weight:700;color:rgb(187,213,218)\">%<\/span>  <span style=\"color:rgb(245,201,181)\">▁<\/span><span style=\"color:rgb(225,205,190)\">▂<\/span><span style=\"color:rgb(202,210,200)\">▃<\/span><span style=\"color:rgb(178,213,209)\">▄<\/span><span style=\"color:rgb(172,218,216)\">▅<\/span><span style=\"color:rgb(187,225,223)\">▆<\/span><span style=\"color:rgb(201,231,230)\">▇<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(35,136,168)\">1<\/span><span style=\"font-weight:700;color:rgb(45,140,164)\">5<\/span><span style=\"font-weight:700;color:rgb(54,143,160)\">.<\/span><span style=\"font-weight:700;color:rgb(64,147,156)\">9<\/span><span style=\"font-weight:700;color:rgb(239,211,82)\">k<\/span>\n<span style=\"color:rgb(187,213,218)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 15.9k\n~/work/example",
+        "chars": [
+          {
+            "char": "1",
+            "color": "#2388A8"
+          },
+          {
+            "char": "5",
+            "color": "#2D8CA4"
+          },
+          {
+            "char": ".",
+            "color": "#368FA0"
+          },
+          {
+            "char": "9",
+            "color": "#40939C"
+          }
+        ],
+        "unit": "k",
+        "unitColor": "#EFD352"
+      },
+      "indexed": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(48,48,48)\"> Opus 5.5 <\/span><span style=\"color:rgb(58,58,58)\"> | <\/span><span style=\"color:rgb(255,135,0)\">high<\/span>  <span style=\"color:rgb(95,135,135)\">tok<\/span> <span style=\"font-weight:700;color:rgb(135,175,215)\">94.4k/200k<\/span> <span style=\"color:rgb(135,175,215)\">(<\/span><span style=\"font-weight:700;color:rgb(135,175,215)\">47.2%<\/span><span style=\"color:rgb(135,175,215)\">)<\/span> <span style=\"color:rgb(208,208,208)\">■■■■■<\/span><span style=\"color:rgb(88,88,88)\">······<\/span> <span style=\"color:rgb(208,208,208)\">$0.42<\/span>\n<span style=\"color:rgb(255,215,0)\">▲<\/span> <span style=\"color:rgb(168,168,168)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">95.0%<\/span>  <span style=\"color:rgb(255,215,175)\">▁<\/span><span style=\"color:rgb(255,215,175)\">▂<\/span><span style=\"color:rgb(215,215,175)\">▃<\/span><span style=\"color:rgb(175,215,175)\">▄<\/span><span style=\"color:rgb(135,215,175)\">▅<\/span><span style=\"color:rgb(135,215,175)\">▆<\/span><span style=\"color:rgb(175,215,215)\">▇<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(0,135,175)\">1<\/span><span style=\"font-weight:700;color:rgb(0,135,175)\">5<\/span><span style=\"font-weight:700;color:rgb(95,135,175)\">.<\/span><span style=\"font-weight:700;color:rgb(95,135,175)\">9<\/span><span style=\"font-weight:700;color:rgb(255,215,95)\">k<\/span>\n<span style=\"color:rgb(175,215,215)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 15.9k\n~/work/example",
+        "chars": [
+          {
+            "char": "1",
+            "color": "#0087AF"
+          },
+          {
+            "char": "5",
+            "color": "#0087AF"
+          },
+          {
+            "char": ".",
+            "color": "#5F87AF"
+          },
+          {
+            "char": "9",
+            "color": "#5F87AF"
+          }
+        ],
+        "unit": "k",
+        "unitColor": "#FFD75F"
+      }
+    }
+  },
+  {
+    "write": 555000,
+    "label": "555k",
+    "modes": {
+      "truecolor": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(44,48,58)\"> Opus 5.5 <\/span><span style=\"color:rgb(35,61,77)\"> | <\/span><span style=\"color:rgb(254,127,45)\">high<\/span>  <span style=\"color:rgb(93,119,140)\">tok<\/span> <span style=\"font-weight:700;color:rgb(143,184,218)\">94.4k/200k<\/span> <span style=\"color:rgb(143,184,218)\">(<\/span><span style=\"font-weight:700;color:rgb(143,184,218)\">47.2%<\/span><span style=\"color:rgb(143,184,218)\">)<\/span> <span style=\"color:rgb(224,228,235)\">■■■■■<\/span><span style=\"color:rgb(74,85,104)\">······<\/span> <span style=\"color:rgb(224,228,235)\">$<\/span><span style=\"color:rgb(224,231,237)\">0<\/span><span style=\"color:rgb(223,235,238)\">.<\/span><span style=\"color:rgb(223,238,240)\">4<\/span><span style=\"color:rgb(223,241,241)\">2<\/span>\n<span style=\"color:rgb(235,223,51)\">▲<\/span> <span style=\"color:rgb(44,104,123)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">9<\/span><span style=\"font-weight:700;color:rgb(255,27,29)\">5<\/span><span style=\"font-weight:700;color:rgb(192,197,201)\">.<\/span><span style=\"font-weight:700;color:rgb(255,57,58)\">0<\/span><span style=\"font-weight:700;color:rgb(187,213,218)\">%<\/span>  <span style=\"color:rgb(245,201,181)\">▁<\/span><span style=\"color:rgb(225,205,190)\">▂<\/span><span style=\"color:rgb(202,210,200)\">▃<\/span><span style=\"color:rgb(178,213,209)\">▄<\/span><span style=\"color:rgb(172,218,216)\">▅<\/span><span style=\"color:rgb(187,225,223)\">▆<\/span><span style=\"color:rgb(201,231,230)\">▇<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(35,136,168)\">5<\/span><span style=\"font-weight:700;color:rgb(45,140,164)\">5<\/span><span style=\"font-weight:700;color:rgb(54,143,160)\">5<\/span><span style=\"font-weight:700;color:rgb(239,211,82)\">k<\/span>\n<span style=\"color:rgb(187,213,218)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 555k\n~/work/example",
+        "chars": [
+          {
+            "char": "5",
+            "color": "#2388A8"
+          },
+          {
+            "char": "5",
+            "color": "#2D8CA4"
+          },
+          {
+            "char": "5",
+            "color": "#368FA0"
+          }
+        ],
+        "unit": "k",
+        "unitColor": "#EFD352"
+      },
+      "indexed": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(48,48,48)\"> Opus 5.5 <\/span><span style=\"color:rgb(58,58,58)\"> | <\/span><span style=\"color:rgb(255,135,0)\">high<\/span>  <span style=\"color:rgb(95,135,135)\">tok<\/span> <span style=\"font-weight:700;color:rgb(135,175,215)\">94.4k/200k<\/span> <span style=\"color:rgb(135,175,215)\">(<\/span><span style=\"font-weight:700;color:rgb(135,175,215)\">47.2%<\/span><span style=\"color:rgb(135,175,215)\">)<\/span> <span style=\"color:rgb(208,208,208)\">■■■■■<\/span><span style=\"color:rgb(88,88,88)\">······<\/span> <span style=\"color:rgb(208,208,208)\">$0.42<\/span>\n<span style=\"color:rgb(255,215,0)\">▲<\/span> <span style=\"color:rgb(168,168,168)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">95.0%<\/span>  <span style=\"color:rgb(255,215,175)\">▁<\/span><span style=\"color:rgb(255,215,175)\">▂<\/span><span style=\"color:rgb(215,215,175)\">▃<\/span><span style=\"color:rgb(175,215,175)\">▄<\/span><span style=\"color:rgb(135,215,175)\">▅<\/span><span style=\"color:rgb(135,215,175)\">▆<\/span><span style=\"color:rgb(175,215,215)\">▇<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(0,135,175)\">5<\/span><span style=\"font-weight:700;color:rgb(0,135,175)\">5<\/span><span style=\"font-weight:700;color:rgb(95,135,175)\">5<\/span><span style=\"font-weight:700;color:rgb(255,215,95)\">k<\/span>\n<span style=\"color:rgb(175,215,215)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 555k\n~/work/example",
+        "chars": [
+          {
+            "char": "5",
+            "color": "#0087AF"
+          },
+          {
+            "char": "5",
+            "color": "#0087AF"
+          },
+          {
+            "char": "5",
+            "color": "#5F87AF"
+          }
+        ],
+        "unit": "k",
+        "unitColor": "#FFD75F"
+      }
+    }
+  },
+  {
+    "write": 1200000,
+    "label": "1.2M",
+    "modes": {
+      "truecolor": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(44,48,58)\"> Opus 5.5 <\/span><span style=\"color:rgb(35,61,77)\"> | <\/span><span style=\"color:rgb(254,127,45)\">high<\/span>  <span style=\"color:rgb(93,119,140)\">tok<\/span> <span style=\"font-weight:700;color:rgb(143,184,218)\">94.4k/200k<\/span> <span style=\"color:rgb(143,184,218)\">(<\/span><span style=\"font-weight:700;color:rgb(143,184,218)\">47.2%<\/span><span style=\"color:rgb(143,184,218)\">)<\/span> <span style=\"color:rgb(224,228,235)\">■■■■■<\/span><span style=\"color:rgb(74,85,104)\">······<\/span> <span style=\"color:rgb(224,228,235)\">$<\/span><span style=\"color:rgb(224,231,237)\">0<\/span><span style=\"color:rgb(223,235,238)\">.<\/span><span style=\"color:rgb(223,238,240)\">4<\/span><span style=\"color:rgb(223,241,241)\">2<\/span>\n<span style=\"color:rgb(235,223,51)\">▲<\/span> <span style=\"color:rgb(44,104,123)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">9<\/span><span style=\"font-weight:700;color:rgb(255,27,29)\">5<\/span><span style=\"font-weight:700;color:rgb(192,197,201)\">.<\/span><span style=\"font-weight:700;color:rgb(255,57,58)\">0<\/span><span style=\"font-weight:700;color:rgb(187,213,218)\">%<\/span>  <span style=\"color:rgb(245,201,181)\">▁<\/span><span style=\"color:rgb(225,205,190)\">▂<\/span><span style=\"color:rgb(202,210,200)\">▃<\/span><span style=\"color:rgb(178,213,209)\">▄<\/span><span style=\"color:rgb(172,218,216)\">▅<\/span><span style=\"color:rgb(187,225,223)\">▆<\/span><span style=\"color:rgb(201,231,230)\">▇<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(35,136,168)\">1<\/span><span style=\"font-weight:700;color:rgb(45,140,164)\">.<\/span><span style=\"font-weight:700;color:rgb(54,143,160)\">2<\/span><span style=\"font-weight:700;color:rgb(230,173,53)\">M<\/span>\n<span style=\"color:rgb(187,213,218)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 1.2M\n~/work/example",
+        "chars": [
+          {
+            "char": "1",
+            "color": "#2388A8"
+          },
+          {
+            "char": ".",
+            "color": "#2D8CA4"
+          },
+          {
+            "char": "2",
+            "color": "#368FA0"
+          }
+        ],
+        "unit": "M",
+        "unitColor": "#E6AD35"
+      },
+      "indexed": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(48,48,48)\"> Opus 5.5 <\/span><span style=\"color:rgb(58,58,58)\"> | <\/span><span style=\"color:rgb(255,135,0)\">high<\/span>  <span style=\"color:rgb(95,135,135)\">tok<\/span> <span style=\"font-weight:700;color:rgb(135,175,215)\">94.4k/200k<\/span> <span style=\"color:rgb(135,175,215)\">(<\/span><span style=\"font-weight:700;color:rgb(135,175,215)\">47.2%<\/span><span style=\"color:rgb(135,175,215)\">)<\/span> <span style=\"color:rgb(208,208,208)\">■■■■■<\/span><span style=\"color:rgb(88,88,88)\">······<\/span> <span style=\"color:rgb(208,208,208)\">$0.42<\/span>\n<span style=\"color:rgb(255,215,0)\">▲<\/span> <span style=\"color:rgb(168,168,168)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">95.0%<\/span>  <span style=\"color:rgb(255,215,175)\">▁<\/span><span style=\"color:rgb(255,215,175)\">▂<\/span><span style=\"color:rgb(215,215,175)\">▃<\/span><span style=\"color:rgb(175,215,175)\">▄<\/span><span style=\"color:rgb(135,215,175)\">▅<\/span><span style=\"color:rgb(135,215,175)\">▆<\/span><span style=\"color:rgb(175,215,215)\">▇<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(0,135,175)\">1<\/span><span style=\"font-weight:700;color:rgb(0,135,175)\">.<\/span><span style=\"font-weight:700;color:rgb(95,135,175)\">2<\/span><span style=\"font-weight:700;color:rgb(215,175,0)\">M<\/span>\n<span style=\"color:rgb(175,215,215)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 1.2M\n~/work/example",
+        "chars": [
+          {
+            "char": "1",
+            "color": "#0087AF"
+          },
+          {
+            "char": ".",
+            "color": "#0087AF"
+          },
+          {
+            "char": "2",
+            "color": "#5F87AF"
+          }
+        ],
+        "unit": "M",
+        "unitColor": "#D7AF00"
+      }
+    }
+  },
+  {
+    "write": 1234567890,
+    "label": "1234.6M",
+    "modes": {
+      "truecolor": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(44,48,58)\"> Opus 5.5 <\/span><span style=\"color:rgb(35,61,77)\"> | <\/span><span style=\"color:rgb(254,127,45)\">high<\/span>  <span style=\"color:rgb(93,119,140)\">tok<\/span> <span style=\"font-weight:700;color:rgb(143,184,218)\">94.4k/200k<\/span> <span style=\"color:rgb(143,184,218)\">(<\/span><span style=\"font-weight:700;color:rgb(143,184,218)\">47.2%<\/span><span style=\"color:rgb(143,184,218)\">)<\/span> <span style=\"color:rgb(224,228,235)\">■■■■■<\/span><span style=\"color:rgb(74,85,104)\">······<\/span> <span style=\"color:rgb(224,228,235)\">$<\/span><span style=\"color:rgb(224,231,237)\">0<\/span><span style=\"color:rgb(223,235,238)\">.<\/span><span style=\"color:rgb(223,238,240)\">4<\/span><span style=\"color:rgb(223,241,241)\">2<\/span>\n<span style=\"color:rgb(235,223,51)\">▲<\/span> <span style=\"color:rgb(44,104,123)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">9<\/span><span style=\"font-weight:700;color:rgb(255,27,29)\">5<\/span><span style=\"font-weight:700;color:rgb(192,197,201)\">.<\/span><span style=\"font-weight:700;color:rgb(255,57,58)\">0<\/span><span style=\"font-weight:700;color:rgb(187,213,218)\">%<\/span>  <span style=\"color:rgb(245,201,181)\">▁<\/span><span style=\"color:rgb(225,205,190)\">▂<\/span><span style=\"color:rgb(202,210,200)\">▃<\/span><span style=\"color:rgb(178,213,209)\">▄<\/span><span style=\"color:rgb(172,218,216)\">▅<\/span><span style=\"color:rgb(187,225,223)\">▆<\/span><span style=\"color:rgb(201,231,230)\">▇<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(35,136,168)\">1<\/span><span style=\"font-weight:700;color:rgb(45,140,164)\">2<\/span><span style=\"font-weight:700;color:rgb(54,143,160)\">3<\/span><span style=\"font-weight:700;color:rgb(64,147,156)\">4<\/span><span style=\"font-weight:700;color:rgb(74,150,152)\">.<\/span><span style=\"font-weight:700;color:rgb(74,150,152)\">6<\/span><span style=\"font-weight:700;color:rgb(230,173,53)\">M<\/span>\n<span style=\"color:rgb(187,213,218)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 1234.6M\n~/work/example",
+        "chars": [
+          {
+            "char": "1",
+            "color": "#2388A8"
+          },
+          {
+            "char": "2",
+            "color": "#2D8CA4"
+          },
+          {
+            "char": "3",
+            "color": "#368FA0"
+          },
+          {
+            "char": "4",
+            "color": "#40939C"
+          },
+          {
+            "char": ".",
+            "color": "#4A9698"
+          },
+          {
+            "char": "6",
+            "color": "#4A9698"
+          }
+        ],
+        "unit": "M",
+        "unitColor": "#E6AD35"
+      },
+      "indexed": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(48,48,48)\"> Opus 5.5 <\/span><span style=\"color:rgb(58,58,58)\"> | <\/span><span style=\"color:rgb(255,135,0)\">high<\/span>  <span style=\"color:rgb(95,135,135)\">tok<\/span> <span style=\"font-weight:700;color:rgb(135,175,215)\">94.4k/200k<\/span> <span style=\"color:rgb(135,175,215)\">(<\/span><span style=\"font-weight:700;color:rgb(135,175,215)\">47.2%<\/span><span style=\"color:rgb(135,175,215)\">)<\/span> <span style=\"color:rgb(208,208,208)\">■■■■■<\/span><span style=\"color:rgb(88,88,88)\">······<\/span> <span style=\"color:rgb(208,208,208)\">$0.42<\/span>\n<span style=\"color:rgb(255,215,0)\">▲<\/span> <span style=\"color:rgb(168,168,168)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">95.0%<\/span>  <span style=\"color:rgb(255,215,175)\">▁<\/span><span style=\"color:rgb(255,215,175)\">▂<\/span><span style=\"color:rgb(215,215,175)\">▃<\/span><span style=\"color:rgb(175,215,175)\">▄<\/span><span style=\"color:rgb(135,215,175)\">▅<\/span><span style=\"color:rgb(135,215,175)\">▆<\/span><span style=\"color:rgb(175,215,215)\">▇<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(0,135,175)\">1<\/span><span style=\"font-weight:700;color:rgb(0,135,175)\">2<\/span><span style=\"font-weight:700;color:rgb(95,135,175)\">3<\/span><span style=\"font-weight:700;color:rgb(95,135,175)\">4<\/span><span style=\"font-weight:700;color:rgb(95,135,135)\">.<\/span><span style=\"font-weight:700;color:rgb(95,135,135)\">6<\/span><span style=\"font-weight:700;color:rgb(215,175,0)\">M<\/span>\n<span style=\"color:rgb(175,215,215)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 1234.6M\n~/work/example",
+        "chars": [
+          {
+            "char": "1",
+            "color": "#0087AF"
+          },
+          {
+            "char": "2",
+            "color": "#0087AF"
+          },
+          {
+            "char": "3",
+            "color": "#5F87AF"
+          },
+          {
+            "char": "4",
+            "color": "#5F87AF"
+          },
+          {
+            "char": ".",
+            "color": "#5F8787"
+          },
+          {
+            "char": "6",
+            "color": "#5F8787"
+          }
+        ],
+        "unit": "M",
+        "unitColor": "#D7AF00"
+      }
+    }
+  },
+  {
+    "write": 0,
+    "label": "0",
+    "modes": {
+      "truecolor": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(44,48,58)\"> Opus 5.5 <\/span><span style=\"color:rgb(35,61,77)\"> | <\/span><span style=\"color:rgb(254,127,45)\">high<\/span>  <span style=\"color:rgb(93,119,140)\">tok<\/span> <span style=\"font-weight:700;color:rgb(143,184,218)\">94.4k/200k<\/span> <span style=\"color:rgb(143,184,218)\">(<\/span><span style=\"font-weight:700;color:rgb(143,184,218)\">47.2%<\/span><span style=\"color:rgb(143,184,218)\">)<\/span> <span style=\"color:rgb(224,228,235)\">■■■■■<\/span><span style=\"color:rgb(74,85,104)\">······<\/span> <span style=\"color:rgb(224,228,235)\">$<\/span><span style=\"color:rgb(224,231,237)\">0<\/span><span style=\"color:rgb(223,235,238)\">.<\/span><span style=\"color:rgb(223,238,240)\">4<\/span><span style=\"color:rgb(223,241,241)\">2<\/span>\n<span style=\"color:rgb(235,223,51)\">▲<\/span> <span style=\"color:rgb(44,104,123)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">9<\/span><span style=\"font-weight:700;color:rgb(255,27,29)\">5<\/span><span style=\"font-weight:700;color:rgb(192,197,201)\">.<\/span><span style=\"font-weight:700;color:rgb(255,57,58)\">0<\/span><span style=\"font-weight:700;color:rgb(187,213,218)\">%<\/span>  <span style=\"color:rgb(245,201,181)\">▁<\/span><span style=\"color:rgb(225,205,190)\">▂<\/span><span style=\"color:rgb(202,210,200)\">▃<\/span><span style=\"color:rgb(178,213,209)\">▄<\/span><span style=\"color:rgb(172,218,216)\">▅<\/span><span style=\"color:rgb(187,225,223)\">▆<\/span><span style=\"color:rgb(201,231,230)\">▇<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span><span style=\"color:rgb(216,238,237)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(35,136,168)\">0<\/span>\n<span style=\"color:rgb(187,213,218)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 0\n~/work/example",
+        "chars": [
+          {
+            "char": "0",
+            "color": "#2388A8"
+          }
+        ],
+        "unit": "",
+        "unitColor": "#E6AD35"
+      },
+      "indexed": {
+        "html": "<span style=\"font-weight:700;color:rgb(255,255,255);background-color:rgb(48,48,48)\"> Opus 5.5 <\/span><span style=\"color:rgb(58,58,58)\"> | <\/span><span style=\"color:rgb(255,135,0)\">high<\/span>  <span style=\"color:rgb(95,135,135)\">tok<\/span> <span style=\"font-weight:700;color:rgb(135,175,215)\">94.4k/200k<\/span> <span style=\"color:rgb(135,175,215)\">(<\/span><span style=\"font-weight:700;color:rgb(135,175,215)\">47.2%<\/span><span style=\"color:rgb(135,175,215)\">)<\/span> <span style=\"color:rgb(208,208,208)\">■■■■■<\/span><span style=\"color:rgb(88,88,88)\">······<\/span> <span style=\"color:rgb(208,208,208)\">$0.42<\/span>\n<span style=\"color:rgb(255,215,0)\">▲<\/span> <span style=\"color:rgb(168,168,168)\">hit<\/span> <span style=\"font-weight:700;color:rgb(255,0,0)\">95.0%<\/span>  <span style=\"color:rgb(255,215,175)\">▁<\/span><span style=\"color:rgb(255,215,175)\">▂<\/span><span style=\"color:rgb(215,215,175)\">▃<\/span><span style=\"color:rgb(175,215,175)\">▄<\/span><span style=\"color:rgb(135,215,175)\">▅<\/span><span style=\"color:rgb(135,215,175)\">▆<\/span><span style=\"color:rgb(175,215,215)\">▇<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span><span style=\"color:rgb(175,215,215)\">█<\/span>   💭 <span style=\"font-weight:700;color:rgb(0,135,175)\">0<\/span>\n<span style=\"color:rgb(175,215,215)\">~/work/example<\/span>",
+        "plain": " Opus 5.5  | high  tok 94.4k/200k (47.2%) ■■■■■······ $0.42\n▲ hit 95.0%  ▁▂▃▄▅▆▇█████   💭 0\n~/work/example",
+        "chars": [
+          {
+            "char": "0",
+            "color": "#0087AF"
+          }
+        ],
+        "unit": "",
+        "unitColor": "#D7AF00"
+      }
+    }
+  }
+]</script>
+<script>
+"use strict";
+const samples = JSON.parse(document.getElementById("preview-data").textContent);
+const requestedColors = ["#2388A8", "#2D8CA4", "#368FA0", "#40939C", "#4A9698"];
+const indexedColors = ["#0087AF", "#0087AF", "#5F87AF", "#5F87AF", "#5F8787"];
+const indexes = [31,31,67,67,66];
+let sampleIndex = 0;
+let mode = "truecolor";
+function render() {
+  const sample = samples[sampleIndex];
+  const current = sample.modes[mode];
+  document.getElementById("terminal-output").innerHTML = current.html;
+  const zoom = document.getElementById("zoom");
+  zoom.replaceChildren(document.createTextNode("💭 "));
+  current.chars.forEach((item, i) => {
+    const span = document.createElement("span");
+    span.className = "write-digit";
+    span.dataset.index = String(i);
+    span.dataset.color = item.color;
+    span.style.color = item.color;
+    span.textContent = item.char;
+    zoom.append(span);
+  });
+  if (current.unit) {
+    const unit = document.createElement("span");
+    unit.className = "write-unit";
+    unit.style.color = current.unitColor;
+    unit.textContent = current.unit;
+    zoom.append(unit);
+  }
+  document.querySelectorAll("[data-sample]").forEach(button => button.setAttribute("aria-pressed", String(Number(button.dataset.sample) === sampleIndex)));
+  document.querySelectorAll("[data-mode]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.mode === mode)));
+  const palette = document.getElementById("palette");
+  palette.replaceChildren();
+  requestedColors.forEach((color, i) => {
+    const swatch = document.createElement("div");
+    swatch.className = "swatch";
+    swatch.style.setProperty("--color", mode === "truecolor" ? color : indexedColors[i]);
+    const strip = document.createElement("div");
+    strip.className = "strip";
+    const code = document.createElement("code");
+    code.textContent = color;
+    const caption = document.createElement("small");
+    caption.textContent = mode === "truecolor" ? `第 ${i+1} 个字符${i === 4 ? "及以后" : ""}` : `256 色索引 ${indexes[i]}`;
+    swatch.append(strip, code, caption);
+    palette.append(swatch);
+  });
+  document.getElementById("mode-note").textContent = mode === "truecolor" ? "当前：精确使用指定的 RGB。" : "当前：近似兼容色，相邻档位可能重复。";
+  window.previewState = {sampleIndex, mode, label: sample.label};
+}
+document.querySelectorAll("[data-sample]").forEach(button => button.addEventListener("click", () => {sampleIndex = Number(button.dataset.sample); render();}));
+document.querySelectorAll("[data-mode]").forEach(button => button.addEventListener("click", () => {mode = button.dataset.mode; render();}));
+render();
+window.previewReady = true;
+</script>
+</body>
+</html>

@@ -21,6 +21,11 @@ from statusline_input import VIEW_AXIS, history_fields, input_fields, latest_buc
 BAR = re.compile(r"[▁▂▃▄▅▆▇█]")
 
 
+def write_number_styles(number, palette):
+    stops = palette["WRITE_NUM_C"]
+    return [(ch, stops[min(i, len(stops)-1)]) for i, ch in enumerate(number)]
+
+
 def old_view(write=555000, quality="exact", percentage="95%", codes=None):
     """A same-revision legacy view with no newly persisted badge field."""
     return {"axis": VIEW_AXIS, "percentage": percentage,
@@ -314,9 +319,10 @@ class WriteBadgeCase(unittest.TestCase):
 
     def test_format_boundaries_exact_spaces_and_per_character_colors(self):
         fallback = self.fallback_script()
-        cases = ((0, "0"), (999, "999"), (1000, "1k"), (1234, "1.2k"),
+        cases = ((0, "0"), (42, "42"), (999, "999"), (1000, "1k"), (1234, "1.2k"),
                  (555000, "555k"), (999999, "1000k"), (1000000, "1M"),
-                 (1200000, "1.2M"), (123456789, "123.5M"))
+                 (1200000, "1.2M"), (15900, "15.9k"), (123456789, "123.5M"),
+                 (1234567890, "1234.6M"))
         for indexed, palette in ((False, PALETTE["truecolor"]), (True, PALETTE["indexed"])):
             color = {"COLORTERM": "", "TERM_PROGRAM": "", "TERM": "xterm-256color"} if indexed else {
                 "COLORTERM": "truecolor", "TERM_PROGRAM": "", "TERM": "xterm-256color"}
@@ -337,7 +343,7 @@ class WriteBadgeCase(unittest.TestCase):
                     self.assertNotIn("|", plain)
                     number = text[:-1] if text.endswith(("k", "M")) else text
                     self.assertEqual(tokens[emoji+2:emoji+2+len(number)],
-                                     [(ch, palette["WRITE_NUM_C"]) for ch in number])
+                                     write_number_styles(number, palette))
                     if text.endswith(("k", "M")):
                         unit_role = "WRITE_K_C" if text.endswith("k") else "WRITE_UNIT_C"
                         self.assertEqual(tokens[emoji+2+len(number)], (text[-1], palette[unit_role]))
@@ -371,15 +377,19 @@ class WriteBadgeCase(unittest.TestCase):
                 self.assertNotIn("💭", unknown)
                 self.saved_view(old_view(555000))
 
-    def test_requested_number_and_k_colors_keep_M_and_other_UI_unchanged(self):
+    def test_requested_number_gradient_and_units_keep_other_UI_unchanged(self):
         fallback = self.fallback_script()
-        colors = (("truecolor", "\x1b[1;38;2;35;136;168m", "\x1b[1;38;2;247;214;79m",
+        colors = (("truecolor", ["\x1b[1;38;2;35;136;168m", "\x1b[1;38;2;45;140;164m",
+                               "\x1b[1;38;2;54;143;160m", "\x1b[1;38;2;64;147;156m",
+                               "\x1b[1;38;2;74;150;152m"], "\x1b[1;38;2;239;211;82m",
                    "\x1b[1;38;2;230;173;53m"),
-                  ("indexed", "\x1b[1;38;5;31m", "\x1b[1;38;5;221m", "\x1b[1;38;5;178m"))
-        for mode, number_color, k_color, m_color in colors:
+                  ("indexed", ["\x1b[1;38;5;31m", "\x1b[1;38;5;31m", "\x1b[1;38;5;67m",
+                              "\x1b[1;38;5;67m", "\x1b[1;38;5;66m"],
+                   "\x1b[1;38;5;221m", "\x1b[1;38;5;178m"))
+        for mode, number_colors, k_color, m_color in colors:
             color = {"COLORTERM": "truecolor" if mode == "truecolor" else "",
                      "TERM_PROGRAM": "", "TERM": "xterm-256color"}
-            self.assertEqual(PALETTE[mode]["WRITE_NUM_C"], number_color)
+            self.assertEqual(PALETTE[mode]["WRITE_NUM_C"], number_colors)
             self.assertEqual(PALETTE[mode]["WRITE_K_C"], k_color)
             self.assertEqual(PALETTE[mode]["WRITE_UNIT_C"], m_color)
             for write, number, unit in ((1234, "1.2", "k"), (1200000, "1.2", "M"),
@@ -391,10 +401,28 @@ class WriteBadgeCase(unittest.TestCase):
                     with_badge = self.render(script=fallback, **color).splitlines()
                     self.assertEqual(with_badge[0], without[0])
                     self.assertEqual(with_badge[-1], without[-1])
-                    expected = "   💭 " + number_color + number + "\x1b[0m"
+                    expected = "   💭 " + "".join(style + ch for ch, style in write_number_styles(number, PALETTE[mode])) + "\x1b[0m"
                     if unit:
                         expected += (k_color if unit == "k" else m_color) + unit + "\x1b[0m"
                     self.assertEqual(with_badge[1], without[1] + expected)
+
+    def test_gradient_uses_all_five_reference_stops_and_clamps_long_numbers(self):
+        fallback = self.fallback_script()
+        reference = [(35, 136, 168), (45, 140, 164), (54, 143, 160),
+                     (64, 147, 156), (74, 150, 152)]
+        for write, number in ((0, "0"), (42, "42"), (999, "999"), (15900, "15.9"),
+                              (123456789, "123.5"), (1234567890, "1234.6"),
+                              (9007199254740991, "9007199254.7")):
+            for locale in ("C", "en_US.UTF-8"):
+                with self.subTest(write=write, locale=locale):
+                    self.saved_view(old_view(write))
+                    raw = self.cache(self.render(script=fallback, LC_ALL=locale))
+                    tokens = visible_styles(raw)
+                    emoji = next(i for i, (ch, _) in enumerate(tokens) if ch == "💭")
+                    expected = [(ch, "\x1b[1;38;2;%d;%d;%dm" % reference[min(i, 4)])
+                                for i, ch in enumerate(number)]
+                    self.assertEqual(tokens[emoji+2:emoji+2+len(number)], expected)
+                    self.assertTrue(raw.endswith("\x1b[0m"))
 
     def test_exact_fit_and_narrow_wrapping_never_shed_original_ui(self):
         fallback = self.fallback_script()

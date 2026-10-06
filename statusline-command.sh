@@ -136,9 +136,14 @@ if [ "$TC" = 1 ]; then
              $'\033[1;38;2;255;57;58m') # #FF393A third digit
   HIT_DOT_C=$'\033[1;38;2;192;197;201m' # #C0C5C9 decimal point
   HIT_PCT_C=$'\033[1;38;2;187;213;218m' # #BBD5DA percent sign
-  WRITE_NUM_C=$'\033[1;38;2;35;136;168m' # #2388A8 — badge number, bold
+  # Badge number: one reference stop per character, decimal point included.
+  WRITE_NUM_C=($'\033[1;38;2;35;136;168m' # #2388A8 — first character, bold
+               $'\033[1;38;2;45;140;164m' # #2D8CA4
+               $'\033[1;38;2;54;143;160m' # #368FA0
+               $'\033[1;38;2;64;147;156m' # #40939C
+               $'\033[1;38;2;74;150;152m') # #4A9698 — fifth and later
   WRITE_UNIT_C=$'\033[1;38;2;230;173;53m' # #E6AD35 — badge M, bold
-  WRITE_K_C=$'\033[1;38;2;247;214;79m'   # #F7D64F — badge k, bold
+  WRITE_K_C=$'\033[1;38;2;239;211;82m'   # #EFD352 — badge k, bold
 else
   BADGE_BG=$'\033[48;5;236m'
   BADGE_FG=$'\033[1;38;5;231m'
@@ -177,9 +182,14 @@ else
   HIT_LABEL_C=$'\033[38;5;248m'        # original project's 256-color 'hit' label
   HIT_NUM_C=$'\033[1;38;5;196m'        # nearest 256 to #FF0000, bold
   HIT_ROLE=0                           # flat here: the pale tones have no close 256 entry
-  WRITE_NUM_C=$'\033[1;38;5;31m'       # nearest 256 to #2388A8, bold
+  # Nearest 256 entries; repeated stops reflect the limited colour cube.
+  WRITE_NUM_C=($'\033[1;38;5;31m'      # #2388A8, bold
+               $'\033[1;38;5;31m'      # #2D8CA4
+               $'\033[1;38;5;67m'      # #368FA0
+               $'\033[1;38;5;67m'      # #40939C
+               $'\033[1;38;5;66m')     # #4A9698
   WRITE_UNIT_C=$'\033[1;38;5;178m'     # nearest 256 to #E6AD35, bold
-  WRITE_K_C=$'\033[1;38;5;221m'       # nearest 256 to #F7D64F, bold
+  WRITE_K_C=$'\033[1;38;5;221m'       # nearest 256 to #EFD352, bold
 fi
 
 FILLED_CHAR='■'
@@ -204,7 +214,15 @@ if [ "$cache_write" != -1 ]; then
     *M) write_number=${write_text%M}; write_unit=M ;;
     *)  write_number=$write_text ;;
   esac
-  write_badge="💭 ${WRITE_NUM_C}${write_number}${RESET}"
+  write_badge="💭 "; write_i=0
+  while [ "$write_i" -lt "${#write_number}" ]; do
+    # Keep the specified left-to-right stops; do not wrap on long numbers.
+    write_color_i=$write_i
+    [ "$write_color_i" -lt "${#WRITE_NUM_C[@]}" ] || write_color_i=$(( ${#WRITE_NUM_C[@]} - 1 ))
+    write_badge="${write_badge}${WRITE_NUM_C[$write_color_i]}${write_number:$write_i:1}"
+    write_i=$(( write_i + 1 ))
+  done
+  write_badge="${write_badge}${RESET}"
   if [ -n "$write_unit" ]; then
     write_unit_color=$WRITE_UNIT_C
     [ "$write_unit" = k ] && write_unit_color=$WRITE_K_C
