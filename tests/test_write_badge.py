@@ -19,10 +19,6 @@ from cache_sources import parse_feed
 from statusline_input import VIEW_AXIS, history_fields, input_fields, latest_bucket_write, saved_history_fields
 
 BAR = re.compile(r"[▁▂▃▄▅▆▇█]")
-WRITE_SEPARATOR_C = {
-    "truecolor": "\x1b[38;2;224;228;235m",
-    "indexed": "\x1b[38;5;252m",
-}
 
 
 def old_view(write=555000, quality="exact", percentage="95%", codes=None):
@@ -132,14 +128,14 @@ class WriteBadgeCase(unittest.TestCase):
         self.append(first)
         one = self.render()
         self.assertEqual(bridge(self.payload, self.env)[8:], ["0.4%", "-"*11+"0", "20000"])
-        self.assertTrue(SGR.sub("", self.cache(one)).endswith("  |  💭 20k"))
+        self.assertTrue(SGR.sub("", self.cache(one)).endswith("   💭 20k"))
         self.append(event("second", BASE + 1, read=80, write=35000, uncached=20, seq=2),
                     event("third", BASE + 2, read=80, write=5000, uncached=20, seq=3))
         total = self.render()
         raw = bridge(self.payload, self.env)
         self.assertEqual(len(raw), 11)
         self.assertEqual(raw[-1], "60000")
-        self.assertEqual(SGR.sub("", self.cache(total)).split("  |  💭 ")[-1], "60k")
+        self.assertEqual(SGR.sub("", self.cache(total)).split("   💭 ")[-1], "60k")
         self.assertEqual("".join(BAR.findall(self.cache(one)))[:-1],
                          "".join(BAR.findall(self.cache(total)))[:-1])
         self.append(event("first", read=80, write=20000, uncached=20, seq=4))
@@ -158,7 +154,7 @@ class WriteBadgeCase(unittest.TestCase):
         self.assertEqual(shared[8:], ["0.3%", "-"*10+"07", "0"])
         row = SGR.sub("", self.cache(self.render(CACHE_HISTORY_NOW=new_time)))
         self.assertEqual("".join(BAR.findall(row)), "▁"*11 + "█")
-        self.assertTrue(row.endswith("  |  💭 0"))
+        self.assertTrue(row.endswith("   💭 0"))
         one = bridge(self.payload, {**self.env, "CACHE_HISTORY_NOW": new_time,
                                     "CACHE_SCOPE_PROJECT": "p1", "CACHE_SCOPE_SESSION": "s1"})
         two = bridge(self.payload, {**self.env, "CACHE_HISTORY_NOW": new_time,
@@ -166,9 +162,9 @@ class WriteBadgeCase(unittest.TestCase):
         self.assertEqual(one[8:], ["0.2%", "-"*11+"0", "60000"])
         self.assertEqual(two[8:], ["100%", "-"*11+"7", "0"])
         self.assertTrue(SGR.sub("", self.cache(self.render(CACHE_HISTORY_NOW=new_time,
-                         CACHE_SCOPE_PROJECT="p1", CACHE_SCOPE_SESSION="s1"))).endswith("  |  💭 60k"))
+                         CACHE_SCOPE_PROJECT="p1", CACHE_SCOPE_SESSION="s1"))).endswith("   💭 60k"))
         self.assertTrue(SGR.sub("", self.cache(self.render(CACHE_HISTORY_NOW=new_time,
-                         CACHE_SCOPE_PROJECT="p2", CACHE_SCOPE_SESSION="s2"))).endswith("  |  💭 0"))
+                         CACHE_SCOPE_PROJECT="p2", CACHE_SCOPE_SESSION="s2"))).endswith("   💭 0"))
 
     def test_coarse_bucket_never_fakes_zero_but_confirmed_zero_shows(self):
         self.append(event("baseline", kind="counter", counter_epoch="e", request_count=1,
@@ -187,7 +183,7 @@ class WriteBadgeCase(unittest.TestCase):
                           uncached=0, seq=3))
         now = str((BASE + 2*BUCKET_MS + 100000) / 1000)
         self.assertEqual(bridge(self.payload, {**self.env, "CACHE_HISTORY_NOW": now})[-1], "0")
-        self.assertTrue(SGR.sub("", self.cache(self.render(CACHE_HISTORY_NOW=now))).endswith("  |  💭 0"))
+        self.assertTrue(SGR.sub("", self.cache(self.render(CACHE_HISTORY_NOW=now))).endswith("   💭 0"))
 
     def test_same_revision_old_sqlite_view_first_read_without_new_request(self):
         h = History(self.db)
@@ -219,7 +215,7 @@ class WriteBadgeCase(unittest.TestCase):
         self.assertEqual(saved_history_fields(self.env), ["95%", "-"*11+"6", "555000"])
         normal = self.render(script=fallback)
         self.assertEqual(SGR.sub("", self.cache(normal)),
-                         "▲ hit 95.0%  " + "▁"*11+"▇  |  💭 555k")
+                         "▲ hit 95.0%  " + "▁"*11+"▇   💭 555k")
         # An invalid feed forces the live helper to use the same committed sidecar.
         self.feed.write_text("{invalid-json}\n")
         failed = self.render()
@@ -285,7 +281,7 @@ class WriteBadgeCase(unittest.TestCase):
         indexed = (223, 223, 187, 151, 115, 115, 152, 152)
         for tc in (True, False):
             color = {"COLORTERM": "truecolor" if tc else "", "TERM_PROGRAM": "", "TERM": "xterm-256color"}
-            separator = "  " + WRITE_SEPARATOR_C["truecolor" if tc else "indexed"] + "|\x1b[0m  💭 "
+            separator = "   💭 "
             for width in (5, 10, 16, 24, 25, 26, 29, 37, 38, 80, 140):
                 with self.subTest(tc=tc, width=width):
                     self.saved_view(old_view(555000, quality="unknown", codes=codes))
@@ -330,17 +326,15 @@ class WriteBadgeCase(unittest.TestCase):
                     raw = self.cache(self.render(script=fallback, **color))
                     plain = SGR.sub("", raw)
                     original = "▲ hit 95.0%  " + "▁"*11+"▇"
-                    self.assertEqual(plain, original + "  |  💭 " + text)
-                    self.assertEqual(plain[len(original):len(original)+5], "  |  ")
-                    self.assertEqual([ord(c) for c in plain[len(original):len(original)+5]], [32, 32, 124, 32, 32])
-                    self.assertEqual(plain[len(original)+5:len(original)+7], "💭 ")
+                    self.assertEqual(plain, original + "   💭 " + text)
+                    self.assertEqual(plain[len(original):len(original)+3], "   ")
+                    self.assertEqual([ord(c) for c in plain[len(original):len(original)+3]], [32, 32, 32])
+                    self.assertEqual(plain[len(original)+3:len(original)+5], "💭 ")
                     tokens = visible_styles(raw)
                     emoji = next(i for i, (ch, _) in enumerate(tokens) if ch == "💭")
-                    separator_color = WRITE_SEPARATOR_C["indexed" if indexed else "truecolor"]
-                    self.assertEqual(tokens[emoji-5:emoji+2], [
-                        (" ", "\x1b[0m"), (" ", "\x1b[0m"), ("|", separator_color),
-                        (" ", "\x1b[0m"), (" ", "\x1b[0m"),
-                        ("💭", "\x1b[0m"), (" ", "\x1b[0m")])
+                    self.assertEqual(tokens[emoji-3:emoji+2],
+                                     [(" ", "\x1b[0m")]*3 + [("💭", "\x1b[0m"), (" ", "\x1b[0m")])
+                    self.assertNotIn("|", plain)
                     number = text[:-1] if text.endswith(("k", "M")) else text
                     self.assertEqual(tokens[emoji+2:emoji+2+len(number)],
                                      [(ch, palette["WRITE_NUM_C"]) for ch in number])
@@ -352,7 +346,7 @@ class WriteBadgeCase(unittest.TestCase):
                     if indexed:
                         self.assertNotIn("38;2", raw)
 
-    def test_separator_matches_dollar_color_without_bold_or_style_leak(self):
+    def test_three_plain_spaces_no_pipe_or_style_leak(self):
         fallback = self.fallback_script()
         self.saved_view(old_view(555000))
         for mode in ("truecolor", "indexed"):
@@ -360,20 +354,20 @@ class WriteBadgeCase(unittest.TestCase):
                 color = {"COLORTERM": "truecolor" if mode == "truecolor" else "",
                          "TERM_PROGRAM": "", "TERM": "xterm-256color"}
                 output = self.render(script=fallback, **color)
-                dollar_style = next(style for ch, style in visible_styles(output.splitlines()[0]) if ch == "$")
-                tokens = visible_styles(self.cache(output))
+                row = self.cache(output)
+                tokens = visible_styles(row)
                 emoji = next(i for i, (ch, _) in enumerate(tokens) if ch == "💭")
-                self.assertEqual(tokens[emoji-3], ("|", dollar_style))
-                self.assertEqual(dollar_style, WRITE_SEPARATOR_C[mode])
-                self.assertEqual(tokens[emoji-2:emoji+2], [
-                    (" ", "\x1b[0m"), (" ", "\x1b[0m"), ("💭", "\x1b[0m"), (" ", "\x1b[0m")])
-                # The separator must disappear with the badge, not remain by itself.
+                self.assertEqual(tokens[emoji-3:emoji+2],
+                                 [(" ", "\x1b[0m")]*3 + [("💭", "\x1b[0m"), (" ", "\x1b[0m")])
+                self.assertNotIn("|", SGR.sub("", row))
+                # Narrow/unknown output must not leave a partial tail or spaces.
+                original = "▲ hit 95.0%  " + "▁"*11 + "▇"
                 narrow = self.cache(self.render(script=fallback, COLUMNS="38", **color))
-                self.assertNotIn("|", SGR.sub("", narrow))
+                self.assertEqual(SGR.sub("", narrow), original)
                 self.assertNotIn("💭", narrow)
                 self.saved_view(old_view(555000, quality="unknown"))
                 unknown = self.cache(self.render(script=fallback, **color))
-                self.assertNotIn("|", SGR.sub("", unknown))
+                self.assertEqual(SGR.sub("", unknown), original)
                 self.assertNotIn("💭", unknown)
                 self.saved_view(old_view(555000))
 
@@ -397,7 +391,7 @@ class WriteBadgeCase(unittest.TestCase):
                     with_badge = self.render(script=fallback, **color).splitlines()
                     self.assertEqual(with_badge[0], without[0])
                     self.assertEqual(with_badge[-1], without[-1])
-                    expected = "  " + WRITE_SEPARATOR_C[mode] + "|\x1b[0m  💭 " + number_color + number + "\x1b[0m"
+                    expected = "   💭 " + number_color + number + "\x1b[0m"
                     if unit:
                         expected += (k_color if unit == "k" else m_color) + unit + "\x1b[0m"
                     self.assertEqual(with_badge[1], without[1] + expected)
@@ -405,7 +399,7 @@ class WriteBadgeCase(unittest.TestCase):
     def test_exact_fit_and_narrow_wrapping_never_shed_original_ui(self):
         fallback = self.fallback_script()
         original = "▲ hit 95.0%  " + "▁"*11+"▇"  # exactly 25 columns
-        for write, text, boundary in ((555000, "555k", 37), (999999, "1000k", 38)):
+        for write, text, boundary in ((555000, "555k", 35), (999999, "1000k", 36)):
             self.saved_view(old_view(write))
             for content_cols in (25, boundary-1, boundary, boundary+1, 20, 21, 22, 1, 6, 10):
                 for locale in ("C", "en_US.UTF-8"):
@@ -415,28 +409,27 @@ class WriteBadgeCase(unittest.TestCase):
                         has_badge = "💭" in plain
                         if content_cols >= 25:
                             expected = content_cols >= boundary
-                            self.assertEqual(plain, original + ("  |  💭 " + text if expected else ""))
+                            self.assertEqual(plain, original + ("   💭 " + text if expected else ""))
                         else:
                             last_col = 12 % content_cols or content_cols
-                            expected = last_col + 8 + len(text) <= content_cols
+                            expected = last_col + 6 + len(text) <= content_cols
                             self.assertEqual(has_badge, expected)
-                            prefix = plain.split("  |  💭 ", 1)[0]
+                            prefix = plain.split("   💭 ", 1)[0]
                             self.assertEqual("".join(BAR.findall(prefix)), "▁"*11+"▇")
                             self.assertEqual("".join(prefix.split()).replace(" ", ""),
                                              "".join(original.split()).replace(" ", ""))
                             if expected:
-                                self.assertTrue(plain.endswith("  |  💭 " + text))
+                                self.assertTrue(plain.endswith("   💭 " + text))
                         self.assertEqual(len(BAR.findall(plain)), 12)
                         # Emoji occupies two columns; ANSI does not. No host-side clipping assumed.
                         for line in plain.splitlines():
                             self.assertLessEqual(len(line) + line.count("💭"), content_cols)
         # The one-column-short boundary has no tail spaces or partial numeric value.
         self.saved_view(old_view(555000))
-        self.assertEqual(SGR.sub("", self.cache(self.render(script=fallback, COLUMNS="37"))), original)
-        self.assertEqual(SGR.sub("", self.cache(self.render(script=fallback, COLUMNS="38"))), original)
-        self.assertEqual(SGR.sub("", self.cache(self.render(script=fallback, COLUMNS="39"))), original)
-        self.assertEqual(SGR.sub("", self.cache(self.render(script=fallback, COLUMNS="40"))), original)
-        self.assertEqual(SGR.sub("", self.cache(self.render(script=fallback, COLUMNS="41"))), original+"  |  💭 555k")
+        for width in (37, 38):
+            self.assertEqual(SGR.sub("", self.cache(self.render(script=fallback, COLUMNS=str(width)))), original)
+        for width in (39, 40, 47):
+            self.assertEqual(SGR.sub("", self.cache(self.render(script=fallback, COLUMNS=str(width)))), original+"   💭 555k")
 
 
 if __name__ == "__main__":

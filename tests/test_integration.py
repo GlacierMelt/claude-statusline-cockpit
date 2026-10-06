@@ -113,17 +113,17 @@ class IntegrationCase(unittest.TestCase):
         output = self.render()
         row = output.splitlines()[1]
         expected = "▲ hit 100.0%  " + "▁" * 10 + "██"
-        self.assertEqual(SGR.sub("", row), expected + "  |  💭 0")
+        self.assertEqual(SGR.sub("", row), expected + "   💭 0")
         self.assertEqual(row.count("\x1b[38;2;245;201;181m▁"), 10)
         self.assertNotIn("·", row)
         indexed = self.render(COLORTERM="", TERM_PROGRAM="", TERM="xterm-256color").splitlines()[1]
-        self.assertEqual(SGR.sub("", indexed), expected + "  |  💭 0")
+        self.assertEqual(SGR.sub("", indexed), expected + "   💭 0")
         self.assertEqual(indexed.count("\x1b[38;5;223m▁"), 10)
         self.assertNotIn("38;2", indexed)
         for width in (10, 12, 20, 80):
             lines = SGR.sub("", self.render(COLUMNS=str(width))).splitlines()[1:]
             # At narrow widths, line breaks replace the two-column separator.
-            suffix = "  |  💭 0" if width == 80 else ""
+            suffix = "   💭 0" if width == 80 else ""
             self.assertEqual("".join(lines).replace(" ", ""), (expected + suffix).replace(" ", ""))
             self.assertTrue(all(len(line) <= width-4 for line in lines))
             self.assertEqual(len(re.findall("[▁▂▃▄▅▆▇█]", "".join(lines))), 12)
@@ -140,7 +140,7 @@ class IntegrationCase(unittest.TestCase):
         self.append(event("zero", BASE-11*300000, read=0, write=100, uncached=0),
                     event("latest", read=100, uncached=0))
         row = self.render().splitlines()[1]
-        self.assertEqual(SGR.sub("", row), "▲ hit 50.0%  " + "▁" * 11 + "█  |  💭 0")
+        self.assertEqual(SGR.sub("", row), "▲ hit 50.0%  " + "▁" * 11 + "█   💭 0")
         self.assertEqual(row.count("\x1b[38;2;245;201;181m▁"), 11)
         h = History(self.path / "history.sqlite3")
         try:
@@ -297,7 +297,7 @@ with h.transaction():
         self.assertEqual(before,self.render(CACHE_HISTORY_NOW=str(BASE/1000+86400)).splitlines()[1])
         self.append(event("b",BASE+86400000,read=100,uncached=0))
         after=SGR.sub("",self.render(CACHE_HISTORY_NOW=str(BASE/1000+86401))).splitlines()[1]
-        self.assertEqual(after,"▲ hit 95.0%  " + "▁" * 10 + "▅█  |  💭 0")
+        self.assertEqual(after,"▲ hit 95.0%  " + "▁" * 10 + "▅█   💭 0")
 
 
     def test_five_clock_bucket_gap_shifts_only_one_visible_cell(self):
@@ -305,8 +305,8 @@ with h.transaction():
         before = "".join(re.findall(r"[▁▂▃▄▅▆▇█]", SGR.sub("", self.render()).splitlines()[1]))
         self.append(event("after-gap", BASE+5*300000, read=0, write=100, uncached=0))
         plain = SGR.sub("", self.render(CACHE_HISTORY_NOW=str(BASE/1000+5*300+100))).splitlines()[1]
-        self.assertEqual(plain, "▲ hit 50.0%  " + before[1:] + "▁  |  💭 100")
-        self.assertEqual(plain, "▲ hit 50.0%  " + "▁"*10 + "█▁  |  💭 100")
+        self.assertEqual(plain, "▲ hit 50.0%  " + before[1:] + "▁   💭 100")
+        self.assertEqual(plain, "▲ hit 50.0%  " + "▁"*10 + "█▁   💭 100")
         frozen = self.render().splitlines()[1]
         self.assertEqual(frozen, self.render(CACHE_HISTORY_NOW=str(BASE/1000+86400)).splitlines()[1])
 

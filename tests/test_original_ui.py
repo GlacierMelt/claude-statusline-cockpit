@@ -171,7 +171,7 @@ class OriginalUICase(unittest.TestCase):
         self.write(event("known", read=100, uncached=0),
                    event("real-zero", BASE+300000, read=0, write=0, uncached=0))
         cache = self.render()
-        self.assertEqual(SGR.sub("", cache), "▲ hit 100.0%  "+"▁"*10+"█▁  |  💭 0")
+        self.assertEqual(SGR.sub("", cache), "▲ hit 100.0%  "+"▁"*10+"█▁   💭 0")
         self.assertEqual(bridge(self.payload,self.env)[8:10], ["~100%", "-"*10+"7?"])
         h=History(self.path/"history.sqlite3")
         try:

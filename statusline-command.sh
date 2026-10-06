@@ -437,8 +437,8 @@ pfx="${TRI_C}▲${RESET} ${HIT_LABEL_C}hit${RESET} ${pct_out}"
 cache_width=$(( 6 + ${#cache_pct} + 2 + 12 ))
 badge_tail=""; badge_extra=0
 if [ -n "$write_badge" ]; then
-  # Two spaces, pipe, two spaces, two-cell emoji, space, and the ASCII value.
-  badge_extra=$(( 8 + ${#write_text} ))
+  # Three plain spaces, a two-cell emoji, one space, and the ASCII value.
+  badge_extra=$(( 6 + ${#write_text} ))
 fi
 if [ "$content_cols" -lt "$cache_width" ]; then
   # Prefix glyphs are atomic as well, even with a C locale (▲ is multibyte).
@@ -455,12 +455,12 @@ if [ "$content_cols" -lt "$cache_width" ]; then
     pfx_wrap="${pfx_wrap}${prefix_cells[$i]}"; prefix_col=$(( prefix_col + 1 ))
   done
   if [ -n "$write_badge" ] && [ "$(( bar_col + badge_extra ))" -le "$content_cols" ]; then
-    badge_tail="  ${COST_C}|${RESET}  ${write_badge}"
+    badge_tail="   ${write_badge}"
   fi
   out2="${pfx_wrap}"$'\n'"${cache_bar}${badge_tail}"
 else
   if [ -n "$write_badge" ] && [ "$(( cache_width + badge_extra ))" -le "$content_cols" ]; then
-    badge_tail="  ${COST_C}|${RESET}  ${write_badge}"
+    badge_tail="   ${write_badge}"
   fi
   out2="${pfx}  ${cache_bar}${badge_tail}"
 fi
